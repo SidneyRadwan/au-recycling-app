@@ -1,7 +1,7 @@
 {
   "name": "Australia Recycling Dev",
   "dockerComposeFile": "../docker-compose.yml",
-  "service": "backend",
+  "service": "devcontainer",
   "workspaceFolder": "/workspace",
   "customizations": {
     "vscode": {
@@ -21,6 +21,9 @@
     }
   },
   "forwardPorts": [3000, 8080, 5432],
-  "postCreateCommand": "cd /workspace/backend && ./gradlew dependencies --quiet && cd /workspace/frontend && npm install && cd /workspace/scraper && pip install -r requirements.txt",
-  "remoteUser": "vscode"
+  "postCreateCommand": "cd /workspace/frontend && npm install --prefer-offline",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
+  ]
 }

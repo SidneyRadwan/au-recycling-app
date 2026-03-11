@@ -1,5 +1,22 @@
-version: '3.9'
 services:
+  # Dev container service — used by .devcontainer/devcontainer.json
+  # Lightweight custom image with Java 21, Node.js 20, Python 3.12
+  devcontainer:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/recycling
+      DATABASE_USERNAME: recycling
+      DATABASE_PASSWORD: recycling_dev
+      NEXT_PUBLIC_API_URL: http://backend:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -26,6 +43,8 @@ services:
       DATABASE_PASSWORD: recycling_dev
       SPRING_PROFILES_ACTIVE: dev
       CORS_ALLOWED_ORIGINS: http://localhost:3000
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-dev-master-key}
     ports:
       - "8080:8080"
     depends_on:
@@ -47,6 +66,27 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+  # LiteLLM proxy — OpenAI-compatible API gateway in front of all AI providers.
+  # Backend calls http://litellm:4000 internally; swap models via LITELLM_DEFAULT_MODEL.
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_DEFAULT_MODEL: ${LITELLM_DEFAULT_MODEL:-claude-sonnet-4-6}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-dev-master-key}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
 
 volumes:
   postgres_data:
