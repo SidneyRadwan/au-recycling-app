@@ -1,0 +1,48 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Java / Gradle
+backend/.gradle/
+backend/build/
+backend/bin/
+*.class
+*.jar
+*.war
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel
+
+# Python
+scraper/__pycache__/
+scraper/.venv/
+scraper/venv/
+scraper/*.egg-info/
+scraper/.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Terraform
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.backup
+infrastructure/terraform/*.tfvars
+!infrastructure/terraform/*.tfvars.example
+
+# Docker
+*.log
+
+# Scraped data (large files)
+scraper/output/*.json
+scraper/output/*.csv
+!scraper/output/.gitkeep

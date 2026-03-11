@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: australia-recycling-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/recycling}
+    username: ${DATABASE_USERNAME:recycling}
+    password: ${DATABASE_PASSWORD:recycling_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080

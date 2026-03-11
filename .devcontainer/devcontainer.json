@@ -1,0 +1,26 @@
+{
+  "name": "Australia Recycling Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker",
+        "ms-python.python"
+      ],
+      "settings": {
+        "java.configuration.runtimes": [
+          { "name": "JavaSE-21", "default": true }
+        ]
+      }
+    }
+  },
+  "forwardPorts": [3000, 8080, 5432],
+  "postCreateCommand": "cd /workspace/backend && ./gradlew dependencies --quiet && cd /workspace/frontend && npm install && cd /workspace/scraper && pip install -r requirements.txt",
+  "remoteUser": "vscode"
+}
