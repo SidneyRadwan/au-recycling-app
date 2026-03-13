@@ -1,0 +1,74 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Frontend: Dev Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend",
+        "env": { "NEXT_PUBLIC_API_URL": "http://localhost:8080" }
+      },
+      "presentation": {
+        "reveal": "always", "panel": "dedicated",
+        "group": "services", "showReuseMessage": false, "clear": true
+      },
+      "runOptions": { "instanceLimit": 1 },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend: Build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "presentation": { "reveal": "always", "panel": "dedicated", "showReuseMessage": false },
+      "group": "build"
+    },
+    {
+      "label": "Frontend: Lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "presentation": { "reveal": "always", "panel": "dedicated", "showReuseMessage": false },
+      "group": "test"
+    },
+    {
+      "label": "Backend: Start",
+      "type": "shell",
+      "command": "set -a && . \"${workspaceFolder}/.env\" 2>/dev/null; set +a && ./gradlew bootRun",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "presentation": {
+        "reveal": "always", "panel": "dedicated",
+        "group": "services", "showReuseMessage": false
+      },
+      "runOptions": { "instanceLimit": 1 },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Test",
+      "type": "shell",
+      "command": "./gradlew test",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "group": "test"
+    },
+    {
+      "label": "Backend: Build",
+      "type": "shell",
+      "command": "./gradlew build",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "group": "build"
+    },
+    {
+      "label": "Full Stack: Start",
+      "dependsOn": ["Backend: Start", "Frontend: Dev Server"],
+      "dependsOrder": "parallel",
+      "runOptions": { "runOn": "folderOpen", "instanceLimit": 1 }
+    },
+    {
+      "label": "Docker: Stop all",
+      "type": "shell",
+      "command": "docker compose down",
+      "options": { "cwd": "${workspaceFolder}" }
+    }
+  ]
+}

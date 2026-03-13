@@ -48,8 +48,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3.12 /usr/local/bin/python3 \
     && ln -sf /usr/bin/python3.12 /usr/local/bin/python
 
+# pre-commit (manages git hooks for all languages in this repo)
+RUN pip install --break-system-packages pre-commit
+
 # Global npm tools
 RUN npm install -g @anthropic-ai/claude-code
+
+# Playwright + Chromium — enables headless browser access for Claude Code
+# (used for Figma page capture, smoke testing, etc.)
+RUN npx --yes playwright install-deps chromium \
+    && npx --yes playwright install chromium
 
 # --- Pre-install project dependencies (cached unless lock files change) ---
 

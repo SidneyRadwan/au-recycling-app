@@ -3,6 +3,11 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteEnv": {
+    "FIGMA_ACCESS_TOKEN": "${localEnv:FIGMA_ACCESS_TOKEN}"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,15 +20,25 @@
       ],
       "settings": {
         "java.configuration.runtimes": [
-          { "name": "JavaSE-21", "default": true }
+          { "name": "JavaSE-21", "path": "/usr/lib/jvm/temurin-21", "default": true }
         ]
       }
     }
   },
   "forwardPorts": [3000, 8080, 5432],
-  "postCreateCommand": "cd /workspace/frontend && npm install --prefer-offline",
-  "remoteUser": "vscode",
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend UI"
+    },
+    "8080": {
+      "label": "Backend API"
+    },
+    "5432": {
+      "label": "Database"
+    }
+  },
   "mounts": [
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind"
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume"
   ]
 }

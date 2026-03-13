@@ -1,0 +1,50 @@
+repos:
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  # Python scraper — lint + format (replaces flake8 + black + isort)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^scraper/
+      - id: ruff-format
+        files: ^scraper/
+
+  # Frontend — ESLint and TypeScript type check
+  - repo: local
+    hooks:
+      - id: frontend-eslint
+        name: ESLint (frontend)
+        language: system
+        entry: bash -c 'cd frontend && npm run lint'
+        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+
+      - id: frontend-typecheck
+        name: TypeScript check (frontend)
+        language: system
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
+        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx)$
+
+  # Backend — Spotless Java formatting check
+  - repo: local
+    hooks:
+      - id: backend-spotless
+        name: Spotless check (backend)
+        language: system
+        entry: bash -c 'cd backend && ./gradlew spotlessCheck --daemon --quiet'
+        pass_filenames: false
+        files: ^backend/.*\.java$
