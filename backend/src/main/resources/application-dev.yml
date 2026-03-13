@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/recycling
-    username: recycling
-    password: recycling_dev
+    url: ${DATABASE_URL:jdbc:postgresql://db:5432/recycling}
+    username: ${DATABASE_USERNAME:recycling}
+    password: ${DATABASE_PASSWORD:recycling_dev}
   jpa:
     show-sql: true
     properties:

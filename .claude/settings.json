@@ -3,6 +3,7 @@
   "permissions": {
     "allow": [
       "Bash(cd *)",
+      "Bash(grep *)",
       "Bash(mkdir *)",
       "Bash(git status)",
       "Bash(git diff *)",
@@ -28,7 +29,18 @@
       "Bash(npm run test *)",
       "Bash(npm run build *)",
       "Bash(npx next lint *)",
-      "Bash(python -m pytest *)"
+      "Bash(python -m pytest *)",
+
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:web.dev)",
+      "WebSearch",
+
+      "mcp__figma-remote-mcp__generate_figma_design"
     ]
-  }
+  },
+  "enabledPlugins": {
+    "figma@claude-plugins-official": true
+  },
+  "enableAllProjectMcpServers": true
 }

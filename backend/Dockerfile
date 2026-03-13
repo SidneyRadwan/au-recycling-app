@@ -16,7 +16,7 @@ RUN ./gradlew dependencies --no-daemon --quiet
 
 # Copy source and build the fat jar, skipping tests (tests run in CI separately)
 COPY src/ src/
-RUN ./gradlew build -x test --no-daemon
+RUN ./gradlew build -x test -x spotlessCheck --no-daemon
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine AS runtime

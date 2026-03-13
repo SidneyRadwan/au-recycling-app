@@ -25,6 +25,8 @@ docker-compose up
 
 Open in VS Code with the Dev Containers extension, or launch in GitHub Codespaces. Everything is pre-configured.
 
+On first open, VS Code will prompt to allow automatic tasks — click **Allow** (or go to **Terminal → Run Task → Manage Automatic Tasks → Allow Automatic Tasks**). This starts the backend and frontend automatically every time the container opens.
+
 ### Manual Setup
 
 ```bash
