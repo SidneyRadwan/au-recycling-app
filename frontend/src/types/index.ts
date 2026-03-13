@@ -20,7 +20,6 @@ export interface CouncilMaterial {
   materialId: number
   materialName: string
   materialSlug: string
-  binType: BinType
   instructions: string | null
   notes: string | null
 }

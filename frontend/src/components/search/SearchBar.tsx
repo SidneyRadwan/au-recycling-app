@@ -166,7 +166,7 @@ export default function SearchBar() {
   return (
     <div className="relative w-full max-w-2xl">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
         <Input
           ref={inputRef}
           type="search"
@@ -182,19 +182,19 @@ export default function SearchBar() {
           role="combobox"
         />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 animate-spin" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground animate-spin" />
         )}
       </div>
 
       {open && results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border bg-white shadow-lg overflow-hidden"
+          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border bg-background shadow-lg overflow-hidden"
           role="listbox"
         >
           {groups.map((group) => (
             <div key={group.groupLabel}>
-              <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 border-b">
+              <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted border-b">
                 {group.groupLabel}
               </div>
               {group.items.map((item) => {
@@ -204,8 +204,8 @@ export default function SearchBar() {
                     key={`${item.type}-${item.label}`}
                     role="option"
                     aria-selected={activeIndex === currentIndex}
-                    className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-green-50 transition-colors ${
-                      activeIndex === currentIndex ? 'bg-green-50' : ''
+                    className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-green-50 dark:hover:bg-green-950 transition-colors ${
+                      activeIndex === currentIndex ? 'bg-green-50 dark:bg-green-950' : ''
                     }`}
                     onMouseDown={(e) => {
                       e.preventDefault()
@@ -213,10 +213,10 @@ export default function SearchBar() {
                     }}
                     onMouseEnter={() => setActiveIndex(currentIndex)}
                   >
-                    <span className="text-sm font-medium text-gray-900 leading-tight">
+                    <span className="text-sm font-medium text-foreground leading-tight">
                       {item.label}
                     </span>
-                    <span className="text-xs text-gray-400 mt-0.5 ml-auto shrink-0">
+                    <span className="text-xs text-muted-foreground mt-0.5 ml-auto shrink-0">
                       {item.sublabel}
                     </span>
                   </button>

@@ -15,10 +15,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files first to leverage layer caching for dependency installs
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
-# Install all dependencies (including devDependencies needed for build)
-RUN npm ci
+# Use npm install (lock file generated on first run; use npm ci once package-lock.json is committed)
+RUN npm install
 
 # Copy source files and build the application
 COPY . .

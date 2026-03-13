@@ -8,7 +8,10 @@ async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options)
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText} for ${url}`)
+    throw Object.assign(
+      new Error(`API error ${res.status}: ${res.statusText} for ${url}`),
+      { status: res.status },
+    )
   }
 
   return res.json() as Promise<T>

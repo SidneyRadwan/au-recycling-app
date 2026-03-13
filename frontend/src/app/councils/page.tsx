@@ -5,6 +5,7 @@ import { getCouncils } from '@/lib/api'
 import CouncilCard from '@/components/council/CouncilCard'
 import { Button } from '@/components/ui/button'
 import { formatState } from '@/lib/utils'
+import AdUnit from '@/components/ui/ad-unit'
 
 interface Props {
   searchParams: Promise<{ state?: string; page?: string }>
@@ -26,30 +27,25 @@ export default async function CouncilsPage({ searchParams }: Props) {
   const page = Math.max(0, parseInt(pageParam ?? '0', 10))
   const pageSize = 24
 
-  let councilsPage
-  try {
-    councilsPage = await getCouncils(state, page, pageSize)
-  } catch {
-    councilsPage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: pageSize }
-  }
+  const councilsPage = await getCouncils(state, page, pageSize)
 
   const { content: councils, totalElements, totalPages, number: currentPage } = councilsPage
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-10">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-6">
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-green-700">Home</Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-gray-900 font-medium">Councils</span>
+        <span className="text-foreground font-medium">Councils</span>
       </nav>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-foreground">
             {state ? `${formatState(state)} Councils` : 'All Councils'}
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="text-muted-foreground mt-1 text-sm">
             {totalElements > 0
               ? `${totalElements} council${totalElements === 1 ? '' : 's'} found`
               : 'No councils found'}
@@ -64,7 +60,7 @@ export default async function CouncilsPage({ searchParams }: Props) {
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors border ${
             !state
               ? 'bg-green-600 text-white border-green-600'
-              : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700'
+              : 'bg-background text-muted-foreground border-border hover:border-green-400 hover:text-green-700'
           }`}
         >
           All
@@ -76,7 +72,7 @@ export default async function CouncilsPage({ searchParams }: Props) {
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors border ${
               state === s
                 ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700'
+                : 'bg-background text-muted-foreground border-border hover:border-green-400 hover:text-green-700'
             }`}
           >
             {s}
@@ -103,7 +99,7 @@ export default async function CouncilsPage({ searchParams }: Props) {
                   </Link>
                 </Button>
               )}
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Page {currentPage + 1} of {totalPages}
               </span>
               {currentPage < totalPages - 1 && (
@@ -117,12 +113,17 @@ export default async function CouncilsPage({ searchParams }: Props) {
           )}
         </>
       ) : (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-muted-foreground">
           <div className="text-4xl mb-3" aria-hidden="true">♻️</div>
           <p className="text-lg font-medium">No councils found</p>
           <p className="text-sm mt-1">Try selecting a different state or check back soon.</p>
         </div>
       )}
+
+      {/* Ad unit — below fold, after results */}
+      <div className="mt-8 border-t pt-4">
+        <AdUnit size="banner" />
+      </div>
     </div>
   )
 }

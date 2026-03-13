@@ -16,6 +16,8 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/.vercel
+frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
 
 # Python
 scraper/__pycache__/

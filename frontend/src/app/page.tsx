@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Search, MapPin, Recycle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SearchBar from '@/components/search/SearchBar'
+import AskAI from '@/components/ai/AskAI'
 
 export const metadata: Metadata = {
   title: 'Australia Recycling — Find Recycling Info for Your Area',
@@ -41,7 +42,7 @@ const HOW_IT_WORKS = [
     step: '3',
     title: 'Recycle right',
     description:
-      'Follow your council's specific guidelines to reduce contamination and improve recycling rates.',
+      "Follow your council's specific guidelines to reduce contamination and improve recycling rates.",
   },
 ]
 
@@ -49,18 +50,18 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-gradient-to-b from-green-50 to-white py-16 px-4">
+      <section className="bg-gradient-to-b from-green-50 to-white dark:from-green-950 dark:to-background py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-medium text-green-800 mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full bg-green-100 dark:bg-green-900 px-4 py-1.5 text-sm font-medium text-green-800 dark:text-green-400 mb-6">
             <Recycle className="h-4 w-4" />
             Free recycling information for all Australians
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
             Find recycling information
             <br />
-            <span className="text-green-600">for your area</span>
+            <span className="text-green-600 dark:text-green-400">for your area</span>
           </h1>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Search by suburb, postcode, or council name to see exactly what goes in each bin.
             Recycling rules vary — get the right information for your council.
           </p>
@@ -69,30 +70,48 @@ export default function HomePage() {
             <SearchBar />
           </div>
 
-          <p className="mt-4 text-sm text-gray-400">
+          <p className="mt-4 text-sm text-muted-foreground">
             Covering 500+ councils across Australia
           </p>
+
+          {/* AI search — Phase 2 */}
+          <div className="mt-8 flex justify-center">
+            <div className="w-full max-w-2xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <span aria-hidden="true">✨</span>
+                  or try AI search
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <AskAI />
+              <p className="mt-2 text-xs text-center text-muted-foreground">
+                Ask natural language questions — our AI uses council data to answer recycling queries
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section className="py-16 px-4 bg-white">
+      <section className="pt-6 pb-16 px-4 bg-background">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-10">How it works</h2>
+          <h2 className="text-2xl font-bold text-center text-foreground mb-10">How it works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map(({ icon: Icon, step, title, description }) => (
               <div key={step} className="flex flex-col items-center text-center gap-4">
                 <div className="relative">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-                    <Icon className="h-7 w-7 text-green-600" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                    <Icon className="h-7 w-7 text-green-600 dark:text-green-400" />
                   </div>
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 dark:bg-green-900 dark:border dark:border-green-400 text-xs font-bold text-white dark:text-green-400">
                     {step}
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+                  <h3 className="font-semibold text-foreground mb-1">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
                 </div>
               </div>
             ))}
@@ -101,12 +120,12 @@ export default function HomePage() {
       </section>
 
       {/* Browse by state */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-muted">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-3">
+          <h2 className="text-2xl font-bold text-center text-foreground mb-3">
             Browse by state
           </h2>
-          <p className="text-center text-gray-500 mb-8 text-sm">
+          <p className="text-center text-muted-foreground mb-8 text-sm">
             Select your state to browse councils in your area
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -114,12 +133,12 @@ export default function HomePage() {
               <Link
                 key={state.code}
                 href={`/councils?state=${state.code}`}
-                className="group flex flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-white p-4 text-center hover:border-green-400 hover:bg-green-50 transition-all"
+                className="group flex flex-col items-center justify-center rounded-xl border-2 border-border dark:border-green-900 bg-card p-4 text-center hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-all"
               >
-                <span className="text-2xl font-bold text-green-600 group-hover:scale-110 transition-transform">
+                <span className="text-2xl font-bold text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform">
                   {state.code}
                 </span>
-                <span className="mt-1 text-xs text-gray-500 leading-tight">{state.name}</span>
+                <span className="mt-1 text-xs text-muted-foreground leading-tight">{state.name}</span>
               </Link>
             ))}
           </div>
@@ -133,12 +152,12 @@ export default function HomePage() {
       </section>
 
       {/* Materials CTA */}
-      <section className="py-12 px-4 bg-white border-t">
+      <section className="py-12 px-4 bg-background border-t">
         <div className="container mx-auto max-w-2xl text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-xl font-semibold text-foreground mb-2">
             Not sure about a specific item?
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Browse our materials database to find out how to dispose of specific items across Australia.
           </p>
           <Button asChild className="bg-green-600 hover:bg-green-700">

@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getMaterial, getMaterials } from '@/lib/api'
+import AdUnit from '@/components/ui/ad-unit'
 
 export const dynamicParams = true
 
@@ -34,11 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MaterialPage({ params }: Props) {
   const { slug } = await params
 
-  let material
+  let material: Awaited<ReturnType<typeof getMaterial>>
   try {
     material = await getMaterial(slug)
-  } catch {
-    notFound()
+  } catch (e) {
+    if ((e as { status?: number }).status === 404) notFound()
+    throw e
   }
 
   return (
@@ -77,6 +79,11 @@ export default async function MaterialPage({ params }: Props) {
         >
           Find your council →
         </Link>
+      </div>
+
+      {/* Ad unit — below the CTA, after core content */}
+      <div className="mt-8 border-t">
+        <AdUnit size="rectangle" />
       </div>
     </div>
   )

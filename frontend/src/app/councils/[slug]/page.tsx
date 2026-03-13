@@ -6,6 +6,8 @@ import { getCouncil, getCouncils } from '@/lib/api'
 import { BinSection, BIN_TYPE_CONFIG } from '@/components/council/MaterialBadge'
 import { Button } from '@/components/ui/button'
 import { formatState } from '@/lib/utils'
+import AdUnit from '@/components/ui/ad-unit'
+import AskAI from '@/components/ai/AskAI'
 import type { BinType } from '@/types'
 
 interface Props {
@@ -54,11 +56,12 @@ const BIN_ORDER: BinType[] = [
 export default async function CouncilDetailPage({ params }: Props) {
   const { slug } = await params
 
-  let council
+  let council: Awaited<ReturnType<typeof getCouncil>>
   try {
     council = await getCouncil(slug)
-  } catch {
-    notFound()
+  } catch (e) {
+    if ((e as { status?: number }).status === 404) notFound()
+    throw e
   }
 
   const materialsByBinType = council.materialsByBinType ?? {}
@@ -101,7 +104,7 @@ export default async function CouncilDetailPage({ params }: Props) {
 
       <div className="container mx-auto max-w-4xl px-4 py-10">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-6 flex-wrap">
+        <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6 flex-wrap">
           <Link href="/" className="hover:text-green-700">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <Link href="/councils" className="hover:text-green-700">Councils</Link>
@@ -110,21 +113,21 @@ export default async function CouncilDetailPage({ params }: Props) {
             {council.state}
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-gray-900 font-medium">{council.name}</span>
+          <span className="text-foreground font-medium">{council.name}</span>
         </nav>
 
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{council.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{council.name}</h1>
               <div className="flex items-center gap-2 mt-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-500">{formatState(council.state)}</span>
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{formatState(council.state)}</span>
                 {totalMaterials > 0 && (
                   <>
-                    <span className="text-gray-300">•</span>
-                    <span className="text-gray-500 text-sm">{totalMaterials} items catalogued</span>
+                    <span className="text-muted-foreground/40">•</span>
+                    <span className="text-muted-foreground text-sm">{totalMaterials} items catalogued</span>
                   </>
                 )}
               </div>
@@ -146,7 +149,7 @@ export default async function CouncilDetailPage({ params }: Props) {
           </div>
 
           {council.description && (
-            <p className="mt-4 text-gray-600 text-sm leading-relaxed">{council.description}</p>
+            <p className="mt-4 text-muted-foreground text-sm leading-relaxed">{council.description}</p>
           )}
 
           {council.recyclingInfoUrl && (
@@ -165,7 +168,7 @@ export default async function CouncilDetailPage({ params }: Props) {
         {/* Bin sections */}
         {totalMaterials > 0 ? (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">What goes in each bin</h2>
+            <h2 className="text-xl font-semibold text-foreground">What goes in each bin</h2>
             {BIN_ORDER.map((binType) => {
               const materials = materialsByBinType[binType] ?? []
               return (
@@ -174,11 +177,11 @@ export default async function CouncilDetailPage({ params }: Props) {
             })}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-400">
+          <div className="rounded-lg border border-dashed border-border p-10 text-center text-muted-foreground">
             <div className="text-3xl mb-3" aria-hidden="true">📋</div>
             <p className="font-medium">No recycling data yet</p>
             <p className="text-sm mt-1">
-              We're still gathering data for this council.
+              We&apos;re still gathering data for this council.
               {council.recyclingInfoUrl && (
                 <>
                   {' '}
@@ -198,11 +201,35 @@ export default async function CouncilDetailPage({ params }: Props) {
           </div>
         )}
 
+        {/* AI chat — ask about this council */}
+        <div className="mt-10 rounded-xl border border-purple-100 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-900 p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span aria-hidden="true" className="text-lg">✨</span>
+            <h2 className="text-base font-semibold text-foreground">
+              Ask AI about {council.name}
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Ask natural language recycling questions — our AI uses council-specific data to answer.
+          </p>
+          <AskAI councilName={council.name} />
+        </div>
+
+        {/* Ad unit — below fold, after bin sections and AI */}
+        <div className="mt-4 border-t">
+          <AdUnit size="rectangle" />
+        </div>
+
+        {/* Disclaimer */}
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+          ⚠️ Data last verified March 2026. Recycling rules can change — always confirm with your council.
+        </p>
+
         {/* Back link */}
-        <div className="mt-10 pt-6 border-t">
+        <div className="mt-6 pt-6 border-t">
           <Link
             href={`/councils?state=${council.state}`}
-            className="text-sm text-gray-500 hover:text-green-700 transition-colors"
+            className="text-sm text-muted-foreground hover:text-green-700 transition-colors"
           >
             ← View all {council.state} councils
           </Link>
