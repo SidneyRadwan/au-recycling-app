@@ -1,0 +1,130 @@
+# Council configurations — add or update entries here to change what gets scraped.
+# recycling_url: the page the LLM will read to extract bin/material data.
+
+- slug: city-of-sydney
+  name: City of Sydney
+  state: NSW
+  website: https://www.cityofsydney.nsw.gov.au
+  recycling_url: https://www.cityofsydney.nsw.gov.au/waste-recycling-services
+  description: >
+    City of Sydney Council provides weekly general waste and recycling collections,
+    fortnightly garden organics pickup, and community recycling centres for
+    household hazardous waste and special items.
+  suburbs:
+    - Sydney
+    - Pyrmont
+    - Glebe
+    - Surry Hills
+    - Newtown
+    - Redfern
+    - Chippendale
+    - Darlinghurst
+    - Paddington
+    - Waterloo
+    - Erskineville
+    - Alexandria
+    - Beaconsfield
+    - Rosebery
+    - Zetland
+
+- slug: city-of-melbourne
+  name: City of Melbourne
+  state: VIC
+  website: https://www.melbourne.vic.gov.au
+  recycling_url: https://www.melbourne.vic.gov.au/residents/waste-recycling
+  description: >
+    City of Melbourne operates a four-bin system: red-lid general waste,
+    yellow-lid recycling, lime-green FOGO (food and garden organics), and
+    a purple-lid glass-only bin in some precincts. The FOGO service accepts
+    all food scraps including meat and dairy.
+  suburbs:
+    - Melbourne CBD
+    - Carlton
+    - Fitzroy
+    - Richmond
+    - South Yarra
+    - St Kilda Road Precinct
+    - Port Melbourne
+    - Docklands
+    - Southbank
+    - East Melbourne
+    - North Melbourne
+    - Parkville
+    - West Melbourne
+    - Kensington
+
+- slug: brisbane-city
+  name: Brisbane City Council
+  state: QLD
+  website: https://www.brisbane.qld.gov.au
+  recycling_url: https://www.brisbane.qld.gov.au/bins-waste-and-recycling/kerbside-collection
+  description: >
+    Brisbane City Council operates a three-bin kerbside system: red-lid general
+    waste (weekly), yellow-lid recycling (fortnightly) and green-lid garden organics
+    (fortnightly). Brisbane does not currently offer kerbside food-organics collection.
+    Queensland's Containers for Change scheme provides 10c refunds on eligible containers.
+  suburbs:
+    - Brisbane CBD
+    - Fortitude Valley
+    - New Farm
+    - Teneriffe
+    - Paddington
+    - Red Hill
+    - Ashgrove
+    - Toowong
+    - West End
+    - South Brisbane
+    - Spring Hill
+    - Kelvin Grove
+    - Auchenflower
+    - Milton
+    - Petrie Terrace
+
+- slug: waverley-council
+  name: Waverley Council
+  state: NSW
+  website: https://www.waverley.nsw.gov.au
+  recycling_url: https://www.waverley.nsw.gov.au/residents/waste_and_recycling
+  description: >
+    Waverley Council provides weekly general waste and recycling collections and
+    fortnightly garden organics pickup. The LGA includes popular coastal suburbs
+    Bondi Beach and Rose Bay. NSW Return and Earn container deposit machines are
+    accessible throughout the area.
+  suburbs:
+    - Bondi
+    - Bondi Beach
+    - Bondi Junction
+    - Rose Bay
+    - Vaucluse
+    - Tamarama
+    - Bronte
+    - Waverley
+    - Dover Heights
+    - Watson's Bay
+
+- slug: inner-west-council
+  name: Inner West Council
+  state: NSW
+  website: https://www.innerwest.nsw.gov.au
+  recycling_url: https://www.innerwest.nsw.gov.au/live/waste-and-recycling
+  description: >
+    Inner West Council operates a four-bin system across the former Ashfield,
+    Leichhardt and Marrickville LGAs. The FOGO lime-green bin accepts all food
+    scraps and garden organics. General waste and FOGO are collected weekly;
+    recycling and bulk waste are collected fortnightly.
+  suburbs:
+    - Newtown
+    - Marrickville
+    - Leichhardt
+    - Balmain
+    - Rozelle
+    - Annandale
+    - Glebe
+    - Ashfield
+    - Summer Hill
+    - Petersham
+    - Enmore
+    - St Peters
+    - Sydenham
+    - Tempe
+    - Dulwich Hill

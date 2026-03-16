@@ -3,14 +3,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env from the scraper directory (or parent if not found)
 _here = Path(__file__).parent
 load_dotenv(_here / ".env", override=False)
-load_dotenv(_here / ".env.local", override=False)
 
 
 def get_database_url() -> str:
-    """Return the PostgreSQL connection string.  Raises if not configured."""
     url = os.environ.get("DATABASE_URL", "")
     if not url:
         raise EnvironmentError(
@@ -21,7 +18,6 @@ def get_database_url() -> str:
 
 
 def get_output_dir() -> Path:
-    """Return the directory where JSON output files are written."""
     raw = os.environ.get("SCRAPER_OUTPUT_DIR", str(_here / "output"))
     path = Path(raw)
     path.mkdir(parents=True, exist_ok=True)
@@ -29,16 +25,27 @@ def get_output_dir() -> Path:
 
 
 def get_rate_limit() -> float:
-    """Return the minimum seconds to sleep between HTTP requests."""
     try:
         return float(os.environ.get("SCRAPER_RATE_LIMIT", "1.0"))
     except ValueError:
         return 1.0
 
 
-class _Settings:
-    """Lazy settings object — values are read from environment on first access."""
+def get_anthropic_api_key() -> str:
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise EnvironmentError(
+            "ANTHROPIC_API_KEY environment variable is not set. "
+            "Copy .env.example to .env and fill in the value."
+        )
+    return key
 
+
+def get_extraction_model() -> str:
+    return os.environ.get("EXTRACTION_MODEL", "claude-opus-4-6")
+
+
+class _Settings:
     @property
     def database_url(self) -> str:
         return get_database_url()
@@ -50,6 +57,14 @@ class _Settings:
     @property
     def rate_limit(self) -> float:
         return get_rate_limit()
+
+    @property
+    def anthropic_api_key(self) -> str:
+        return get_anthropic_api_key()
+
+    @property
+    def extraction_model(self) -> str:
+        return get_extraction_model()
 
 
 settings = _Settings()

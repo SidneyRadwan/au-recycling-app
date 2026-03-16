@@ -1,3 +1,4 @@
+FROM ghcr.io/astral-sh/uv:latest AS uv
 FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -48,6 +49,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3.12 /usr/local/bin/python3 \
     && ln -sf /usr/bin/python3.12 /usr/local/bin/python
 
+# uv — fast Python package manager
+COPY --from=uv /uv /uvx /usr/local/bin/
+
 # pre-commit (manages git hooks for all languages in this repo)
 RUN pip install --break-system-packages pre-commit
 
@@ -73,10 +77,12 @@ RUN chmod +x /tmp/backend/gradlew \
 COPY frontend/package*.json /tmp/frontend/
 RUN cd /tmp/frontend && npm install && rm -rf /tmp/frontend
 
-# Scraper: pip dependencies
-COPY scraper/requirements.txt /tmp/scraper/
-RUN pip install --break-system-packages -r /tmp/scraper/requirements.txt \
-    && rm -rf /tmp/scraper
+# Scraper: pre-cache uv packages (speeds up post-create venv creation)
+ENV UV_CACHE_DIR=/opt/uv-cache
+COPY scraper/pyproject.toml /tmp/scraper/
+RUN cd /tmp/scraper && uv sync --no-install-project \
+    && rm -rf /tmp/scraper/.venv \
+    && chown -R vscode:vscode /opt/uv-cache
 
 USER vscode
 ENV PATH=/home/vscode/.local/bin:$PATH
