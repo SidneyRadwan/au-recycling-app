@@ -7,6 +7,7 @@ import { BinSection, BIN_TYPE_CONFIG } from '@/components/council/MaterialBadge'
 import { Button } from '@/components/ui/button'
 import { formatState } from '@/lib/utils'
 import AdUnit from '@/components/ui/ad-unit'
+import { ErrorState } from '@/components/ui/error-state'
 import AskAI from '@/components/ai/AskAI'
 import type { BinType } from '@/types'
 
@@ -18,7 +19,7 @@ export const dynamicParams = true
 
 export async function generateStaticParams() {
   try {
-    const page = await getCouncils(undefined, 0, 50)
+    const page = await getCouncils(undefined, 0, 1000)
     return page.content.map((c) => ({ slug: c.slug }))
   } catch {
     return []
@@ -61,7 +62,7 @@ export default async function CouncilDetailPage({ params }: Props) {
     council = await getCouncil(slug)
   } catch (e) {
     if ((e as { status?: number }).status === 404) notFound()
-    throw e
+    return <ErrorState />
   }
 
   const materialsByBinType = council.materialsByBinType ?? {}

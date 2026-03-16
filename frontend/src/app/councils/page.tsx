@@ -6,6 +6,7 @@ import CouncilCard from '@/components/council/CouncilCard'
 import { Button } from '@/components/ui/button'
 import { formatState } from '@/lib/utils'
 import AdUnit from '@/components/ui/ad-unit'
+import { ErrorState } from '@/components/ui/error-state'
 
 interface Props {
   searchParams: Promise<{ state?: string; page?: string }>
@@ -27,7 +28,12 @@ export default async function CouncilsPage({ searchParams }: Props) {
   const page = Math.max(0, parseInt(pageParam ?? '0', 10))
   const pageSize = 24
 
-  const councilsPage = await getCouncils(state, page, pageSize)
+  let councilsPage: Awaited<ReturnType<typeof getCouncils>>
+  try {
+    councilsPage = await getCouncils(state, page, pageSize)
+  } catch {
+    return <ErrorState />
+  }
 
   const { content: councils, totalElements, totalPages, number: currentPage } = councilsPage
 

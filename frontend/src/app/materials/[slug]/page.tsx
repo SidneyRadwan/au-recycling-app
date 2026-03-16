@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getMaterial, getMaterials } from '@/lib/api'
 import AdUnit from '@/components/ui/ad-unit'
+import { ErrorState } from '@/components/ui/error-state'
 
 export const dynamicParams = true
 
@@ -40,18 +41,18 @@ export default async function MaterialPage({ params }: Props) {
     material = await getMaterial(slug)
   } catch (e) {
     if ((e as { status?: number }).status === 404) notFound()
-    throw e
+    return <ErrorState />
   }
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-6">
+      <nav className="text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-green-600">Home</Link>
         {' / '}
         <Link href="/materials" className="hover:text-green-600">Materials</Link>
         {' / '}
-        <span className="text-gray-900">{material.name}</span>
+        <span className="text-foreground">{material.name}</span>
       </nav>
 
       <div className="mb-6">
@@ -60,9 +61,9 @@ export default async function MaterialPage({ params }: Props) {
             {material.category}
           </span>
         )}
-        <h1 className="text-3xl font-bold text-gray-900 mt-3">{material.name}</h1>
+        <h1 className="text-3xl font-bold text-foreground mt-3">{material.name}</h1>
         {material.description && (
-          <p className="mt-2 text-gray-600">{material.description}</p>
+          <p className="mt-2 text-muted-foreground">{material.description}</p>
         )}
       </div>
 

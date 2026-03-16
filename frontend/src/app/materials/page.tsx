@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { getMaterials } from '@/lib/api'
 import AdUnit from '@/components/ui/ad-unit'
+import { ErrorState } from '@/components/ui/error-state'
 
 export const metadata: Metadata = {
   title: 'What Can I Recycle? | Australia Recycling',
@@ -25,7 +26,13 @@ interface Props {
 
 export default async function MaterialsPage({ searchParams }: Props) {
   const { category } = await searchParams
-  const materials = await getMaterials(category)
+
+  let materials: Awaited<ReturnType<typeof getMaterials>>
+  try {
+    materials = await getMaterials(category)
+  } catch {
+    return <ErrorState />
+  }
 
   const grouped = materials.reduce<Record<string, typeof materials>>((acc, m) => {
     const cat = m.category ?? 'Other'
