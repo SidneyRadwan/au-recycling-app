@@ -9,7 +9,7 @@ model_list:
   - model_name: default          # logical name used by the backend
     litellm_params:
       model: ${LITELLM_DEFAULT_MODEL}   # e.g. claude-sonnet-4-6, gpt-4o, gemini/gemini-2.0-flash
-      api_key: ${LITELLM_API_KEY}
+      api_key: ${ANTHROPIC_API_KEY}
 
 litellm_settings:
   # Drop unsupported params rather than erroring
