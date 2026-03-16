@@ -183,12 +183,12 @@ export default async function CouncilDetailPage({ params }: Props) {
             <p className="font-medium">No recycling data yet</p>
             <p className="text-sm mt-1">
               We&apos;re still gathering data for this council.
-              {council.recyclingInfoUrl && (
+              {(council.recyclingInfoUrl || council.website) && (
                 <>
                   {' '}
                   Check the{' '}
                   <a
-                    href={council.recyclingInfoUrl}
+                    href={council.recyclingInfoUrl ?? council.website ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-green-600 hover:underline"
