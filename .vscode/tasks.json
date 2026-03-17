@@ -4,11 +4,8 @@
     {
       "label": "Frontend: Dev Server",
       "type": "shell",
-      "command": "npm run dev",
-      "options": {
-        "cwd": "${workspaceFolder}/frontend",
-        "env": { "NEXT_PUBLIC_API_URL": "http://localhost:8080" }
-      },
+      "command": "${workspaceFolder}/scripts/start-frontend.sh",
+      "options": { "cwd": "${workspaceFolder}" },
       "presentation": {
         "reveal": "always", "panel": "dedicated",
         "group": "services", "showReuseMessage": false, "clear": true
@@ -46,8 +43,8 @@
     {
       "label": "Backend: Start",
       "type": "shell",
-      "command": "set -a && . \"${workspaceFolder}/.env\" 2>/dev/null; set +a && ./gradlew bootRun",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "command": "${workspaceFolder}/scripts/start-backend.sh",
+      "options": { "cwd": "${workspaceFolder}" },
       "presentation": {
         "reveal": "always", "panel": "dedicated",
         "group": "services", "showReuseMessage": false
