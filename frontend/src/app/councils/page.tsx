@@ -35,7 +35,7 @@ export default async function CouncilsPage({ searchParams }: Props) {
     return <ErrorState />
   }
 
-  const { content: councils, totalElements, totalPages, number: currentPage } = councilsPage
+  const { content: councils, page: { totalElements, totalPages, number: currentPage } } = councilsPage
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-10">
