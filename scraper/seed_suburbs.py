@@ -130,27 +130,52 @@ def _match_council(
     return None
 
 
-# Postcode dataset uses disambiguation suffixes or outdated names for some LGAs.
-# Map (lga_name, state) → canonical name matching the councils table.
-_LGA_OVERRIDES: dict[tuple[str, str], str] = {
+# Postcode dataset uses disambiguation suffixes, wrong states, or outdated names.
+# Map (lga_name, state) → (canonical_name, canonical_state) matching the councils table.
+_LGA_OVERRIDES: dict[tuple[str, str], tuple[str, str]] = {
     # Disambiguation suffixes — same bare name exists in multiple states
-    ("Bayside (NSW)", "NSW"): "Bayside Council",
-    ("Bayside (Vic.)", "VIC"): "Bayside City Council",
-    ("Campbelltown (NSW)", "NSW"): "Campbelltown City Council",
-    ("Campbelltown (SA)", "SA"): "City of Campbelltown",
-    ("Central Coast (NSW)", "NSW"): "Central Coast Council",
-    ("Central Highlands (Qld)", "QLD"): "Central Highlands Regional Council",
-    ("Central Highlands (Tas.)", "TAS"): "Central Highlands",
-    ("Flinders (Qld)", "QLD"): "Flinders Shire Council",
-    ("Flinders (Tas.)", "TAS"): "Flinders",
-    ("Kingston (SA)", "SA"): "Kingston District Council",
-    ("Kingston (Vic.)", "VIC"): "Kingston City Council",
-    ("Latrobe (Tas.)", "TAS"): "Latrobe",
-    ("Latrobe (Vic.)", "VIC"): "Latrobe City Council",
-    # Punctuation difference
-    ("Norwood Payneham and St Peters", "SA"): "City of Norwood Payneham & St Peters",
+    ("Bayside (NSW)", "NSW"): ("Bayside Council", "NSW"),
+    ("Bayside (Vic.)", "VIC"): ("Bayside City Council", "VIC"),
+    ("Campbelltown (NSW)", "NSW"): ("Campbelltown City Council", "NSW"),
+    ("Campbelltown (SA)", "SA"): ("City of Campbelltown", "SA"),
+    ("Central Coast (NSW)", "NSW"): ("Central Coast Council", "NSW"),
+    ("Central Highlands (Qld)", "QLD"): ("Central Highlands Regional Council", "QLD"),
+    ("Central Highlands (Tas.)", "TAS"): ("Central Highlands", "TAS"),
+    ("Flinders (Qld)", "QLD"): ("Flinders Shire Council", "QLD"),
+    ("Flinders (Tas.)", "TAS"): ("Flinders", "TAS"),
+    ("Kingston (SA)", "SA"): ("Kingston District Council", "SA"),
+    ("Kingston (Vic.)", "VIC"): ("Kingston City Council", "VIC"),
+    ("Latrobe (Tas.)", "TAS"): ("Latrobe", "TAS"),
+    ("Latrobe (Vic.)", "VIC"): ("Latrobe City Council", "VIC"),
+    # Punctuation differences
+    ("Norwood Payneham and St Peters", "SA"): (
+        "City of Norwood Payneham & St Peters",
+        "SA",
+    ),
+    ("Glamorgan-Spring Bay", "TAS"): (
+        "Glamorgan\u2013Spring Bay",
+        "TAS",
+    ),  # en-dash in DB
+    ("Waratah-Wynyard", "TAS"): ("Waratah\u2013Wynyard", "TAS"),  # en-dash in DB
+    ("Flinders Ranges", "SA"): ("Flinders Range Council", "SA"),  # singular in DB
     # Renamed council
-    ("Moreland", "VIC"): "Merri-bek City Council",
+    ("Moreland", "VIC"): ("Merri-bek City Council", "VIC"),
+    # Wrong state in source data — council exists in a different state
+    ("Laverton", "NT"): ("Laverton", "WA"),
+    ("Laverton", "SA"): ("Laverton", "WA"),
+    ("Carpentaria", "NT"): ("Carpentaria Shire Council", "QLD"),
+    ("Snowy Monaro", "ACT"): ("Snowy Monaro Regional Council", "NSW"),
+    ("Snowy Valleys", "ACT"): ("Snowy Valleys Council", "NSW"),
+    # Border postcodes — suburb filed under wrong state in source data
+    ("East Gippsland", "NSW"): ("East Gippsland Shire Council", "VIC"),
+    ("Goondiwindi", "NSW"): ("Goondiwindi Regional Council", "QLD"),
+    ("Mildura", "NSW"): ("Mildura Rural City Council", "VIC"),
+    ("Swan Hill", "NSW"): ("Swan Hill Rural City Council", "VIC"),
+    ("Inverell", "QLD"): ("Inverell Shire Council", "NSW"),
+    ("Tenterfield", "QLD"): ("Tenterfield Shire Council", "NSW"),
+    ("Albury", "VIC"): ("Albury City Council", "NSW"),
+    ("Berrigan", "VIC"): ("Berrigan Shire Council", "NSW"),
+    ("Snowy Valleys", "VIC"): ("Snowy Valleys Council", "NSW"),
 }
 
 
@@ -184,7 +209,7 @@ def fetch_and_build(
         if not suburb or not state or not lga_name:
             continue
 
-        lga_name = _LGA_OVERRIDES.get((lga_name, state), lga_name)
+        lga_name, state = _LGA_OVERRIDES.get((lga_name, state), (lga_name, state))
         council_id = _match_council(lga_name, state, by_state)
         if council_id is None:
             unmatched.add(f"{state}: {lga_name}")
