@@ -17,7 +17,7 @@ mcp = FastMCP("australia-recycling")
 
 
 def _get_conn():
-    return psycopg2.connect(settings.database_url)
+    return psycopg2.connect(settings.get_database_url())
 
 
 @mcp.tool()

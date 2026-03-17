@@ -24,10 +24,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-import requests
 import psycopg2
+import requests
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
+
+from config import settings
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -99,7 +101,7 @@ def to_sql_row(name: str, state: str, website: str | None) -> str:
 
 def scrape_nsw() -> list[dict]:
     print("  Fetching NSW...", file=sys.stderr)
-    url = "https://www.olg.nsw.gov.au/public/local-government-directory/"
+    url = settings.seed_nsw_url
     resp = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "lxml")
@@ -157,7 +159,7 @@ def scrape_vic(page) -> list[dict]:
 
     # Find the Excel download link via Playwright (page is JS-rendered)
     page.goto(
-        "https://www.vic.gov.au/local-government-contacts-and-information",
+        settings.seed_vic_url,
         wait_until="domcontentloaded",
         timeout=30000,
     )
@@ -240,14 +242,8 @@ def scrape_qld(_page=None) -> list[dict]:
     print("  Fetching QLD...", file=sys.stderr)
     import time
 
-    directory_url = (
-        "https://www.dlgwv.qld.gov.au/local-government/for-the-community"
-        "/local-government-directory/search-the-local-government-directory"
-    )
-    api_url = (
-        "https://www.dlgwv.qld.gov.au/local-government/for-the-community"
-        "/local-government-directory/lg-directory-config/get-lga-json?lgacode="
-    )
+    directory_url = settings.seed_qld_url
+    api_url = settings.seed_qld_api_url
     headers = {"User-Agent": "Mozilla/5.0"}
 
     resp = requests.get(directory_url, timeout=30, headers=headers)
@@ -291,7 +287,7 @@ def scrape_wa(_page=None) -> list[dict]:
     import time
 
     print("  Fetching WA...", file=sys.stderr)
-    base = "https://mycouncil.wa.gov.au"
+    base = settings.seed_wa_url.rstrip("/")
     headers = {"User-Agent": "Mozilla/5.0"}
 
     resp = requests.get(f"{base}/Home/GetGeoData", timeout=30, headers=headers)
@@ -350,7 +346,7 @@ def scrape_sa(_page=None) -> list[dict]:
     across 7 wikitables (one per region).
     """
     print("  Fetching SA...", file=sys.stderr)
-    url = "https://en.wikipedia.org/wiki/Local_government_areas_of_South_Australia"
+    url = settings.seed_sa_url
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (compatible; au-recycling-seed/1.0; "
@@ -406,7 +402,7 @@ def scrape_tas(_page=None) -> list[dict]:
     We trust all non-header rows in the single wikitable — no keyword filter needed.
     """
     print("  Fetching TAS...", file=sys.stderr)
-    url = "https://en.wikipedia.org/wiki/Local_government_areas_of_Tasmania"
+    url = settings.seed_tas_url
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (compatible; au-recycling-seed/1.0; "
@@ -478,10 +474,7 @@ def scrape_nt(page=None) -> list[dict]:
     in a JS accordion). Falls back to a hard-coded list if Playwright fails.
     """
     print("  Fetching NT...", file=sys.stderr)
-    url = (
-        "https://nt.gov.au/community/local-councils-remote-communities-and-homelands"
-        "/find-your-council"
-    )
+    url = settings.seed_nt_url
 
     if page is not None:
         try:

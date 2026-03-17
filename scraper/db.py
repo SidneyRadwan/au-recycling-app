@@ -1,4 +1,5 @@
 """PostgreSQL upsert logic for council data."""
+
 import logging
 from typing import Any
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_connection():
-    return psycopg2.connect(settings.database_url)
+    return psycopg2.connect(settings.get_database_url())
 
 
 def upsert_council(conn, council: CouncilData) -> int:
@@ -69,7 +70,9 @@ def upsert_suburbs(conn, council_id: int, suburbs: list[str], state: str) -> Non
         )
 
 
-def upsert_material(conn, material_slug: str, material_name: str, category: str | None) -> int:
+def upsert_material(
+    conn, material_slug: str, material_name: str, category: str | None
+) -> int:
     """Upsert a material and return its ID."""
     with conn.cursor() as cur:
         cur.execute(
@@ -106,6 +109,23 @@ def upsert_council_material(
             """,
             (council_id, material_id, bin_type, instructions, notes),
         )
+
+
+def get_council_scraper_configs() -> list[dict]:
+    """Return councils that have a recycling_info_url set — the scraper work list."""
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT slug, name, state, website, recycling_info_url, description "
+            "FROM councils WHERE recycling_info_url IS NOT NULL ORDER BY slug"
+        )
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, row)) for row in cur.fetchall()]
+    conn.close()
+    # Rename to match scraper config key expected by GenericCouncilScraper
+    for row in rows:
+        row["recycling_url"] = row.pop("recycling_info_url")
+    return rows
 
 
 def save_council_data(council: CouncilData) -> None:

@@ -278,7 +278,7 @@ Page content:
             logger.info("LLM cache hit for %s", source_url)
             raw = cache_file.read_text()
         else:
-            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            client = anthropic.Anthropic(api_key=settings.get_anthropic_api_key())
             message = client.messages.create(
                 model=settings.extraction_model,
                 max_tokens=8192,
