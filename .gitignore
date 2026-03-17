@@ -18,11 +18,11 @@ frontend/tsconfig.tsbuildinfo
 frontend/next-env.d.ts
 
 # Python
-scraper/__pycache__/
-scraper/.venv/
-scraper/venv/
-scraper/*.egg-info/
-scraper/.pytest_cache/
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
 
 # IDE
 .idea/
@@ -41,9 +41,11 @@ infrastructure/terraform/*.tfvars
 # Docker
 *.log
 
-# Scraped data (large files)
+# Scraped output (large/generated files)
 scraper/output/*.json
 scraper/output/*.csv
+scraper/output/*.txt
+scraper/output/.llm_cache/
 !scraper/output/.gitkeep
 
 # Claude

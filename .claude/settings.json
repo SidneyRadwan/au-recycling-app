@@ -31,9 +31,7 @@
       "Bash(npx next lint *)",
       "Bash(python -m pytest *)",
 
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:stackoverflow.com)",
-      "WebFetch(domain:web.dev)",
+      "WebFetch",
       "WebSearch",
 
       "mcp__figma-remote-mcp__generate_figma_design"
