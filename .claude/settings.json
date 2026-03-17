@@ -29,7 +29,8 @@
       "Bash(npm run test *)",
       "Bash(npm run build *)",
       "Bash(npx next lint *)",
-      "Bash(python -m pytest *)",
+      "Bash(uv run pytest *)",
+      "Bash(./gradlew test *)",
 
       "WebFetch",
       "WebSearch",
