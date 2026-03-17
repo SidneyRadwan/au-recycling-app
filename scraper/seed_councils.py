@@ -442,9 +442,13 @@ def scrape_tas(_page=None) -> list[dict]:
 # NT — nt.gov.au (Playwright — regional councils are in JS accordion)
 # ---------------------------------------------------------------------------
 
-# NT has 5 municipal, 3 shire, and 10 regional councils = 18 total.
+# NT has 18 councils (5 city/town, 3 shire/community government, 10 regional).
 # The server-rendered HTML only shows 8 (municipal + shire).
 # Regional councils are in a JavaScript accordion that requires Playwright.
+
+# Tennant Creek is the seat of Barkly Regional Council, not a separate LGA.
+_NT_EXCLUDE = {"Tennant Creek Town Council"}
+
 _NT_FALLBACK = [
     ("Alice Springs Town Council", "https://www.alicesprings.nt.gov.au"),
     ("Barkly Regional Council", "https://www.barkly.nt.gov.au"),
@@ -459,7 +463,6 @@ _NT_FALLBACK = [
     ("Litchfield Council", "https://www.litchfield.nt.gov.au"),
     ("MacDonnell Regional Council", "https://www.macdonnell.nt.gov.au"),
     ("Roper Gulf Regional Council", "https://www.ropergulf.nt.gov.au"),
-    ("Tennant Creek Town Council", "https://www.tennantcreek.nt.gov.au"),
     ("Tiwi Islands Regional Council", "https://www.tiwiislands.nt.gov.au"),
     ("Victoria Daly Regional Council", "https://www.victoriadaly.nt.gov.au"),
     ("Wagait Shire Council", "https://www.wagait.nt.gov.au"),
@@ -497,7 +500,7 @@ def scrape_nt(page=None) -> list[dict]:
             for a in soup.select("a[href]"):
                 name = re.sub(r"\s+website$", "", a.get_text(strip=True), flags=re.I)
                 href = a.get("href", "")
-                if not name or len(name) < 4 or name in seen:
+                if not name or len(name) < 4 or name in seen or name in _NT_EXCLUDE:
                     continue
                 if not _COUNCIL_KEYWORDS.search(name):
                     continue
@@ -515,7 +518,11 @@ def scrape_nt(page=None) -> list[dict]:
             print(f"    NT Playwright failed: {e}", file=sys.stderr)
 
     print("    NT: using hard-coded list (18 councils)", file=sys.stderr)
-    result = [{"name": n, "state": "NT", "website": w} for n, w in _NT_FALLBACK]
+    result = [
+        {"name": n, "state": "NT", "website": w}
+        for n, w in _NT_FALLBACK
+        if n not in _NT_EXCLUDE
+    ]
     print(f"    NT: {len(result)} councils", file=sys.stderr)
     return result
 
@@ -538,6 +545,21 @@ _COUNCIL_KEYWORDS = re.compile(
     re.I,
 )
 
+# Canonical name overrides — source directories sometimes list councils under
+# inverted or abbreviated names. Map scraped name → canonical name so the slug
+# stays stable across re-seeds and matches what is already in the DB.
+_NAME_OVERRIDES: dict[str, str] = {
+    # NSW OLG lists as "Council of the City of Sydney" / inverted form
+    "Sydney, Council of the City of": "City of Sydney",
+    "Council of the City of Sydney": "City of Sydney",
+    # VIC Excel uses "Melbourne City Council"; official brand is "City of Melbourne"
+    "Melbourne City Council": "City of Melbourne",
+    # VIC Excel uses "Port Phillip City Council"; existing slug is port-phillip-council
+    "Port Phillip City Council": "Port Phillip Council",
+    # WA API returns bare suburb name "Perth"; official name is "City of Perth"
+    "Perth": "City of Perth",
+}
+
 
 # ---------------------------------------------------------------------------
 # SQL generation
@@ -545,14 +567,15 @@ _COUNCIL_KEYWORDS = re.compile(
 
 
 def generate_sql(all_councils: list[dict]) -> str:
-    # Deduplicate by slug
+    # Apply canonical name overrides then deduplicate by slug
     seen_slugs: set[str] = set()
     unique = []
     for c in all_councils:
-        slug = slugify(c["name"])
+        name = _NAME_OVERRIDES.get(c["name"], c["name"])
+        slug = slugify(name)
         if slug and slug not in seen_slugs:
             seen_slugs.add(slug)
-            unique.append(c)
+            unique.append({**c, "name": name})
 
     rows = [to_sql_row(c["name"], c["state"], c["website"]) for c in unique]
     rows_sql = ",\n".join(rows)
