@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SearchController {
 
-    private final SearchService searchService;
+  private final SearchService searchService;
 
-    @GetMapping
-    public SearchResultDto search(@RequestParam String q) {
-        return searchService.search(q);
-    }
+  @GetMapping
+  public SearchResultDto search(@RequestParam String q) {
+    return searchService.search(q);
+  }
 }

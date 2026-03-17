@@ -15,22 +15,22 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CouncilController {
 
-    private final CouncilService councilService;
+  private final CouncilService councilService;
 
-    @GetMapping
-    public Page<CouncilDto> listCouncils(
-            @RequestParam(required = false) String state,
-            @PageableDefault(size = 20) Pageable pageable) {
-        if (state != null && !state.isBlank()) {
-            return councilService.findByState(state, pageable);
-        }
-        return councilService.findAll(pageable);
+  @GetMapping
+  public Page<CouncilDto> listCouncils(
+      @RequestParam(required = false) String state, @PageableDefault(size = 20) Pageable pageable) {
+    if (state != null && !state.isBlank()) {
+      return councilService.findByState(state, pageable);
     }
+    return councilService.findAll(pageable);
+  }
 
-    @GetMapping("/{slug}")
-    public ResponseEntity<CouncilDetailDto> getCouncil(@PathVariable String slug) {
-        return councilService.findBySlug(slug)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  @GetMapping("/{slug}")
+  public ResponseEntity<CouncilDetailDto> getCouncil(@PathVariable String slug) {
+    return councilService
+        .findBySlug(slug)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 }

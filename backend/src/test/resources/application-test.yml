@@ -11,14 +11,3 @@ spring:
     show-sql: false
   flyway:
     enabled: false
-  sql:
-    init:
-      mode: always
-      data-locations: classpath:db/local-seed.sql
-  h2:
-    console:
-      enabled: true    # http://localhost:8080/h2-console
-
-logging:
-  level:
-    com.australiarecycling: DEBUG
