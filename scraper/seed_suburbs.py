@@ -130,6 +130,30 @@ def _match_council(
     return None
 
 
+# Postcode dataset uses disambiguation suffixes or outdated names for some LGAs.
+# Map (lga_name, state) → canonical name matching the councils table.
+_LGA_OVERRIDES: dict[tuple[str, str], str] = {
+    # Disambiguation suffixes — same bare name exists in multiple states
+    ("Bayside (NSW)", "NSW"): "Bayside Council",
+    ("Bayside (Vic.)", "VIC"): "Bayside City Council",
+    ("Campbelltown (NSW)", "NSW"): "Campbelltown City Council",
+    ("Campbelltown (SA)", "SA"): "City of Campbelltown",
+    ("Central Coast (NSW)", "NSW"): "Central Coast Council",
+    ("Central Highlands (Qld)", "QLD"): "Central Highlands Regional Council",
+    ("Central Highlands (Tas.)", "TAS"): "Central Highlands",
+    ("Flinders (Qld)", "QLD"): "Flinders Shire Council",
+    ("Flinders (Tas.)", "TAS"): "Flinders",
+    ("Kingston (SA)", "SA"): "Kingston District Council",
+    ("Kingston (Vic.)", "VIC"): "Kingston City Council",
+    ("Latrobe (Tas.)", "TAS"): "Latrobe",
+    ("Latrobe (Vic.)", "VIC"): "Latrobe City Council",
+    # Punctuation difference
+    ("Norwood Payneham and St Peters", "SA"): "City of Norwood Payneham & St Peters",
+    # Renamed council
+    ("Moreland", "VIC"): "Merri-bek City Council",
+}
+
+
 # ---------------------------------------------------------------------------
 # Fetch postcode CSV and build suburb rows
 # ---------------------------------------------------------------------------
@@ -160,6 +184,7 @@ def fetch_and_build(
         if not suburb or not state or not lga_name:
             continue
 
+        lga_name = _LGA_OVERRIDES.get((lga_name, state), lga_name)
         council_id = _match_council(lga_name, state, by_state)
         if council_id is None:
             unmatched.add(f"{state}: {lga_name}")
