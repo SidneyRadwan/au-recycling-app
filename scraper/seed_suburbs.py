@@ -209,6 +209,10 @@ def fetch_and_build(
         if not suburb or not state or not lga_name:
             continue
 
+        # Skip Australia Post delivery centres — not real suburbs
+        if suburb.endswith(" Dc") or suburb.endswith(" Bc") or suburb.endswith(" Mc"):
+            continue
+
         lga_name, state = _LGA_OVERRIDES.get((lga_name, state), (lga_name, state))
         council_id = _match_council(lga_name, state, by_state)
         if council_id is None:
