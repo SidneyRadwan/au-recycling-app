@@ -218,11 +218,16 @@ def write_migration(sql: str) -> None:
     print(f"Written: {path}", file=sys.stderr)
 
 
-def write_to_db(rows: list[tuple[str, str | None, str, int]]) -> None:
+def write_to_db(
+    rows: list[tuple[str, str | None, str, int]], reset: bool = False
+) -> None:
     print("  Inserting into database...", file=sys.stderr)
     conn = _db_connect()
     with conn:
         with conn.cursor() as cur:
+            if reset:
+                cur.execute("TRUNCATE suburbs")
+                print("  Reset: truncated suburbs", file=sys.stderr)
             cur.executemany(
                 "INSERT INTO suburbs (name, postcode, state, council_id) "
                 "VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING",
@@ -245,7 +250,15 @@ def main() -> None:
         default="stdout",
         help="stdout: print SQL | migration: write V4__seed_suburbs.sql | db: insert directly",
     )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Truncate suburbs before seeding. Only valid with --output db.",
+    )
     args = parser.parse_args()
+
+    if args.reset and args.output != "db":
+        parser.error("--reset is only valid with --output db")
 
     postcodes_url = settings.seed_postcodes_url
 
@@ -262,7 +275,7 @@ def main() -> None:
     elif args.output == "migration":
         write_migration(generate_sql(rows))
     elif args.output == "db":
-        write_to_db(rows)
+        write_to_db(rows, reset=args.reset)
 
 
 if __name__ == "__main__":

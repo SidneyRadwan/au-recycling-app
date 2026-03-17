@@ -603,7 +603,7 @@ def write_migration(sql: str) -> None:
     print(f"Written: {path}", file=sys.stderr)
 
 
-def write_to_db(sql: str) -> None:
+def write_to_db(sql: str, reset: bool = False) -> None:
     import os
     from dotenv import load_dotenv
 
@@ -626,6 +626,12 @@ def write_to_db(sql: str) -> None:
     )
     with conn:
         with conn.cursor() as cur:
+            if reset:
+                cur.execute("TRUNCATE councils CASCADE")
+                print(
+                    "  Reset: truncated councils (cascades to suburbs, council_materials)",
+                    file=sys.stderr,
+                )
             cur.execute(sql)
     conn.close()
     print("Inserted into database.", file=sys.stderr)
@@ -650,7 +656,15 @@ def main() -> None:
         default=["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"],
         help="Limit to specific states (default: all)",
     )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Truncate councils (cascades to suburbs, council_materials) before seeding. Only valid with --output db.",
+    )
     args = parser.parse_args()
+
+    if args.reset and args.output != "db":
+        parser.error("--reset is only valid with --output db")
 
     all_councils: list[dict] = []
 
@@ -687,7 +701,7 @@ def main() -> None:
     elif args.output == "migration":
         write_migration(sql)
     elif args.output == "db":
-        write_to_db(sql)
+        write_to_db(sql, reset=args.reset)
 
 
 if __name__ == "__main__":
