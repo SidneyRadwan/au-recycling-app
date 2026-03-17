@@ -182,7 +182,9 @@ export default function SearchBar() {
           role="combobox"
         />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground animate-spin" />
+          <span className="absolute right-3 top-0 bottom-0 flex items-center pointer-events-none">
+            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+          </span>
         )}
       </div>
 

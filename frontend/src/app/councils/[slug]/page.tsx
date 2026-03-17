@@ -218,7 +218,7 @@ export default async function CouncilDetailPage({ params }: Props) {
 
         {/* Ad unit — below fold, after bin sections and AI */}
         <div className="mt-4 border-t">
-          <AdUnit size="rectangle" />
+          <AdUnit size="banner" />
         </div>
 
         {/* Disclaimer */}

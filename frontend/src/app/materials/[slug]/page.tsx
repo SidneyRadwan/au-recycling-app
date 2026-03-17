@@ -57,7 +57,7 @@ export default async function MaterialPage({ params }: Props) {
 
       <div className="mb-6">
         {material.category && (
-          <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded">
+          <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded">
             {material.category}
           </span>
         )}
@@ -67,8 +67,8 @@ export default async function MaterialPage({ params }: Props) {
         )}
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-        <p className="text-amber-800 font-medium">
+      <div className="bg-warning-bg border border-warning-border rounded-xl p-6">
+        <p className="text-warning-text font-medium">
           Recycling rules vary by council. Search your council above to see specific guidelines for your area.
         </p>
       </div>

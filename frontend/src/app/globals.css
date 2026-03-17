@@ -34,6 +34,48 @@
 
     --radius: 0.5rem;
 
+    /* Warning callout */
+    --warning-bg: 48 96% 95%;
+    --warning-border: 43 96% 74%;
+    --warning-text: 36 77% 30%;
+
+    /* Bin type colours */
+    --bin-recycling-bg: 55 92% 95%;
+    --bin-recycling-border: 48 96% 77%;
+    --bin-recycling-header: 55 92% 88%;
+    --bin-recycling-hover: 55 92% 82%;
+    --bin-recycling-text: 45 93% 22%;
+
+    --bin-general-bg: 0 86% 97%;
+    --bin-general-border: 0 91% 85%;
+    --bin-general-header: 0 93% 92%;
+    --bin-general-hover: 0 93% 86%;
+    --bin-general-text: 0 72% 29%;
+
+    --bin-green-bg: 138 76% 96%;
+    --bin-green-border: 141 79% 80%;
+    --bin-green-header: 142 77% 90%;
+    --bin-green-hover: 141 79% 84%;
+    --bin-green-text: 142 72% 22%;
+
+    --bin-soft-bg: 270 100% 97%;
+    --bin-soft-border: 270 91% 85%;
+    --bin-soft-header: 269 100% 92%;
+    --bin-soft-hover: 270 91% 86%;
+    --bin-soft-text: 270 67% 32%;
+
+    --bin-special-bg: 214 100% 97%;
+    --bin-special-border: 213 94% 82%;
+    --bin-special-header: 214 100% 92%;
+    --bin-special-hover: 213 94% 86%;
+    --bin-special-text: 221 72% 28%;
+
+    --bin-none-bg: 0 0% 97%;
+    --bin-none-border: 0 0% 84%;
+    --bin-none-header: 0 0% 92%;
+    --bin-none-hover: 0 0% 86%;
+    --bin-none-text: 0 0% 30%;
+
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -69,6 +111,48 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 142.4 71.8% 29.2%;
+
+    /* Warning callout — dark mode */
+    --warning-bg: 36 77% 6%;
+    --warning-border: 36 77% 20%;
+    --warning-text: 43 96% 68%;
+
+    /* Bin type colours — dark mode */
+    --bin-recycling-bg: 48 96% 6%;
+    --bin-recycling-border: 45 93% 18%;
+    --bin-recycling-header: 48 90% 12%;
+    --bin-recycling-hover: 48 90% 16%;
+    --bin-recycling-text: 55 92% 72%;
+
+    --bin-general-bg: 0 72% 6%;
+    --bin-general-border: 0 72% 18%;
+    --bin-general-header: 0 72% 11%;
+    --bin-general-hover: 0 72% 15%;
+    --bin-general-text: 0 91% 75%;
+
+    --bin-green-bg: 142 72% 5%;
+    --bin-green-border: 142 72% 16%;
+    --bin-green-header: 142 72% 10%;
+    --bin-green-hover: 142 72% 14%;
+    --bin-green-text: 142 77% 65%;
+
+    --bin-soft-bg: 270 67% 6%;
+    --bin-soft-border: 270 67% 18%;
+    --bin-soft-header: 270 67% 11%;
+    --bin-soft-hover: 270 67% 15%;
+    --bin-soft-text: 269 100% 78%;
+
+    --bin-special-bg: 221 72% 6%;
+    --bin-special-border: 221 72% 18%;
+    --bin-special-header: 221 72% 11%;
+    --bin-special-hover: 221 72% 15%;
+    --bin-special-text: 214 100% 76%;
+
+    --bin-none-bg: 0 0% 8%;
+    --bin-none-border: 0 0% 22%;
+    --bin-none-header: 0 0% 13%;
+    --bin-none-hover: 0 0% 18%;
+    --bin-none-text: 0 0% 72%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
