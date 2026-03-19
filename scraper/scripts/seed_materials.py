@@ -3,9 +3,9 @@
 Australia Recycling Scraper — CLI entry point.
 
 Usage:
-    python main.py --councils all --output json
-    python main.py --councils all --output json --resume   # skip already-scraped
-    python main.py --councils city-of-sydney,city-of-melbourne --output db
+    python scripts/seed_materials.py --councils all --output json
+    python scripts/seed_materials.py --councils all --output json --resume   # skip already-scraped
+    python scripts/seed_materials.py --councils city-of-sydney,city-of-melbourne --output db
 """
 
 import argparse
@@ -15,6 +15,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import settings
 from councils.registry import get_all_slugs, get_scraper
 

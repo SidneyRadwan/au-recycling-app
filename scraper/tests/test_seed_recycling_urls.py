@@ -1,6 +1,6 @@
 """Unit tests for seed_recycling_urls scoring logic."""
 
-from seed_recycling_urls import _score_link, _select_best
+from scripts.seed_recycling_urls import _score_link, _select_best
 
 
 BASE_URL = "https://www.council.nsw.gov.au"

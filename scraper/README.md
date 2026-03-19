@@ -6,8 +6,11 @@ Python 3.12 scripts for seeding and maintaining council and recycling URL data.
 
 | Script | Purpose |
 |--------|---------|
-| `seed_councils.py` | Seed council names, slugs, states, and website URLs |
-| `seed_recycling_urls.py` | Discover each council's recycling/waste page URL |
+| `scripts/seed_councils.py` | Seed council names, slugs, states, and website URLs |
+| `scripts/seed_recycling_urls.py` | Discover each council's recycling/waste page URL |
+| `scripts/seed_materials.py` | Scrape recycling material data for each council |
+| `scripts/seed_suburbs.py` | Seed suburb → council mapping |
+| `scripts/dump_councils.py` | Dump current DB state to a timestamped YAML snapshot |
 
 ---
 
@@ -15,11 +18,10 @@ Python 3.12 scripts for seeding and maintaining council and recycling URL data.
 
 ### Full scrape (all sources live)
 
-Scrapes state government directories, applies overrides from `council_overrides.yaml`, writes
-a timestamped `councils_YYYYMMDD_HHMMSS.yaml` snapshot, and upserts into the database:
+Scrapes state government directories, applies overrides from `council_overrides.yaml`, and upserts into the database:
 
 ```bash
-uv run python seed_councils.py --output db
+uv run python scripts/seed_councils.py --output db
 ```
 
 ### Seed from a YAML snapshot (when sources are down)
@@ -27,22 +29,22 @@ uv run python seed_councils.py --output db
 Skip scraping entirely and reseed the database from a previously generated YAML file:
 
 ```bash
-uv run python seed_councils.py --from-file councils_20260319_143022.yaml --output db
+uv run python scripts/seed_councils.py --from-file councils_20260319_143022.yaml --output db
 ```
 
 ### Snapshot current database state
 
-Read all councils from the database and write to a new timestamped YAML (includes any existing
-`recycling_url` values):
+Read all councils from the database (including recycling URLs) and write to a new timestamped YAML:
 
 ```bash
-uv run python seed_councils.py --dump-db
+uv run python scripts/dump_councils.py
+uv run python scripts/dump_councils.py --output councils_custom.yaml
 ```
 
 ### Limit to specific states
 
 ```bash
-uv run python seed_councils.py --output db --states NSW VIC
+uv run python scripts/seed_councils.py --output db --states NSW VIC
 ```
 
 ### Reset before seeding
@@ -50,7 +52,7 @@ uv run python seed_councils.py --output db --states NSW VIC
 Truncates the `councils` table (cascades to `suburbs` and `council_materials`) before inserting:
 
 ```bash
-uv run python seed_councils.py --output db --reset
+uv run python scripts/seed_councils.py --output db --reset
 ```
 
 ---
@@ -62,7 +64,7 @@ Renders each council homepage with Playwright, scores nav links, and writes the 
 ### Discover and write to database
 
 ```bash
-uv run python seed_recycling_urls.py --output db --workers 2
+uv run python scripts/seed_recycling_urls.py --output db --workers 2
 ```
 
 ### Also update a YAML snapshot
@@ -71,13 +73,36 @@ Pass `--yaml` to populate the `recycling_url` field in an existing councils YAML
 the database write:
 
 ```bash
-uv run python seed_recycling_urls.py --output db --workers 2 --yaml councils_20260319_143022.yaml
+uv run python scripts/seed_recycling_urls.py --output db --workers 2 --yaml councils_20260319_143022.yaml
 ```
 
 ### Re-discover (clear existing URLs first)
 
 ```bash
-uv run python seed_recycling_urls.py --output db --workers 2 --reset
+uv run python scripts/seed_recycling_urls.py --output db --workers 2 --reset
+```
+
+---
+
+## Seeding suburbs
+
+Seeds the suburbs table from Matthew Proctor's Australian Postcodes dataset.
+
+```bash
+uv run python scripts/seed_suburbs.py --output db
+uv run python scripts/seed_suburbs.py --output db --reset
+```
+
+---
+
+## Scraping materials
+
+Scrapes recycling material data for each council via Playwright + LLM extraction.
+
+```bash
+uv run python scripts/seed_materials.py --councils all --output db
+uv run python scripts/seed_materials.py --councils all --output db --resume
+uv run python scripts/seed_materials.py --councils city-of-sydney,city-of-melbourne --output db
 ```
 
 ---
@@ -96,9 +121,15 @@ These are applied on every run of both scripts.
 ## Typical full workflow
 
 ```bash
-# 1. Scrape councils → creates councils_YYYYMMDD_HHMMSS.yaml
-uv run python seed_councils.py --output db
+# 1. Scrape councils
+uv run python scripts/seed_councils.py --output db
 
-# 2. Discover recycling URLs → populates recycling_url in the YAML and the database
-uv run python seed_recycling_urls.py --output db --workers 2 --yaml councils_<timestamp>.yaml
+# 2. Discover recycling URLs → populates recycling_url in the database
+uv run python scripts/seed_recycling_urls.py --output db --workers 2
+
+# 3. Snapshot DB state to YAML
+uv run python scripts/dump_councils.py
+
+# 4. Scrape recycling materials for each council
+uv run python scripts/seed_materials.py --councils all --output db
 ```

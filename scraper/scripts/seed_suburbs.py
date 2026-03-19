@@ -23,6 +23,7 @@ import psycopg2
 import requests
 from dotenv import load_dotenv
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import settings
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; au-recycling-seed/1.0)"}
@@ -77,7 +78,7 @@ def _strip_suffixes(name: str) -> str:
 def _db_connect():
     import os
 
-    load_dotenv(Path(__file__).parent.parent / ".env")
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
     db_url = os.environ.get("DATABASE_URL", "")
     m = re.match(r"jdbc:postgresql://([^:/]+)(?::(\d+))?/(\w+)", db_url)
     if m:
@@ -265,7 +266,7 @@ ON CONFLICT DO NOTHING;
 
 def write_migration(sql: str) -> None:
     path = (
-        Path(__file__).parent.parent
+        Path(__file__).parent.parent.parent
         / "backend/src/main/resources/db/migration/V4__seed_suburbs.sql"
     )
     path.write_text(sql)

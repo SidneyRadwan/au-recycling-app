@@ -22,7 +22,6 @@ import argparse
 import re
 import sys
 import tempfile
-from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -31,6 +30,7 @@ import requests
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import settings
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ from config import settings
 
 
 def _load_overrides() -> dict:
-    path = Path(__file__).parent / "council_overrides.yaml"
+    path = Path(__file__).parent.parent / "council_overrides.yaml"
     if not path.exists():
         return {}
     import yaml
@@ -665,7 +665,7 @@ ON CONFLICT (slug) DO UPDATE SET
 
 def write_migration(sql: str) -> None:
     path = (
-        Path(__file__).parent.parent
+        Path(__file__).parent.parent.parent
         / "backend/src/main/resources/db/migration/V3__seed_councils.sql"
     )
     path.write_text(sql)
@@ -676,7 +676,7 @@ def _db_conn():
     import os
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).parent.parent / ".env")
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
     db_url = os.environ.get("DATABASE_URL", "")
 
     m = re.match(r"jdbc:postgresql://([^:/]+)(?::(\d+))?/(\w+)", db_url)
@@ -692,73 +692,6 @@ def _db_conn():
         user=os.environ.get("DATABASE_USERNAME", "recycling"),
         password=os.environ.get("DATABASE_PASSWORD", "recycling_dev"),
     )
-
-
-_SCRAPER_DIR = Path(__file__).parent
-
-
-def _timestamped_yaml_path() -> Path:
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return _SCRAPER_DIR / f"councils_{ts}.yaml"
-
-
-def _latest_yaml_path() -> Path | None:
-    files = sorted(_SCRAPER_DIR.glob("councils_*.yaml"))
-    return files[-1] if files else None
-
-
-def dump_db_to_yaml(path: Path | None = None) -> Path:
-    """Read all councils from the DB and write to a timestamped councils YAML."""
-    import yaml
-
-    if path is None:
-        path = _timestamped_yaml_path()
-
-    conn = _db_conn()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT name, slug, state, website, recycling_info_url"
-                " FROM councils ORDER BY state, name"
-            )
-            rows = cur.fetchall()
-    conn.close()
-
-    councils = [
-        {
-            "name": name,
-            "slug": slug,
-            "state": state,
-            "website": website,
-            "recycling_url": recycling_url,
-        }
-        for name, slug, state, website, recycling_url in rows
-    ]
-    path.write_text(yaml.dump(councils, allow_unicode=True, sort_keys=False))
-    print(f"Wrote {len(councils)} councils to {path}", file=sys.stderr)
-    return path
-
-
-def save_councils_yaml(councils: list[dict], path: Path | None = None) -> Path:
-    """Write a prepared councils list to a timestamped YAML with empty recycling_url."""
-    import yaml
-
-    if path is None:
-        path = _timestamped_yaml_path()
-
-    rows = [
-        {
-            "name": c["name"],
-            "slug": c["slug"],
-            "state": c["state"],
-            "website": c.get("website"),
-            "recycling_url": None,
-        }
-        for c in councils
-    ]
-    path.write_text(yaml.dump(rows, allow_unicode=True, sort_keys=False))
-    print(f"Wrote {len(rows)} councils to {path}", file=sys.stderr)
-    return path
 
 
 def load_from_yaml(path: Path) -> list[dict]:
@@ -819,11 +752,6 @@ def main() -> None:
         help="Truncate councils (cascades to suburbs, council_materials) before seeding. Only valid with --output db.",
     )
     parser.add_argument(
-        "--dump-db",
-        action="store_true",
-        help="Read current councils from the DB and write to a timestamped councils YAML, then exit.",
-    )
-    parser.add_argument(
         "--from-file",
         metavar="PATH",
         help="Skip scraping; seed from the given councils YAML file instead.",
@@ -832,12 +760,6 @@ def main() -> None:
 
     if args.reset and args.output != "db":
         parser.error("--reset is only valid with --output db")
-    if args.dump_db and args.from_file:
-        parser.error("--dump-db and --from-file are mutually exclusive")
-
-    if args.dump_db:
-        dump_db_to_yaml()
-        return
 
     if args.from_file:
         all_councils = load_from_yaml(Path(args.from_file))
@@ -877,9 +799,6 @@ def main() -> None:
     sql, prepared = generate_sql(all_councils)
 
     print(f"\nTotal unique councils: {len(prepared)}", file=sys.stderr)
-
-    if not args.from_file:
-        save_councils_yaml(prepared)
 
     if args.output == "stdout":
         print(sql)

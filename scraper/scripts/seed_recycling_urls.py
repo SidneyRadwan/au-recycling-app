@@ -24,6 +24,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from playwright.sync_api import Playwright, sync_playwright
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from councils.base import DEFAULT_HEADERS, _SKIP_PATH_SEGMENTS
 from db import get_connection
 
@@ -228,7 +229,7 @@ def discover_recycling_url(website: str) -> str | None:
 
 
 def _load_overrides() -> dict:
-    path = Path(__file__).parent / "council_overrides.yaml"
+    path = Path(__file__).parent.parent / "council_overrides.yaml"
     if not path.exists():
         return {}
     import yaml

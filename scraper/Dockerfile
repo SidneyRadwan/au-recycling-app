@@ -18,5 +18,5 @@ RUN uv sync --frozen --no-install-project --no-dev
 
 COPY . .
 
-# Default: run the MCP server (override CMD for Cloud Run Jobs: uv run python main.py --councils all --output db)
+# Default: run the MCP server (override CMD for Cloud Run Jobs: uv run python scripts/seed_materials.py --councils all --output db)
 CMD ["uv", "run", "python", "mcp_server.py"]
