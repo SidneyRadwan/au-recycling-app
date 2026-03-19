@@ -10,7 +10,7 @@ Python 3.12 scripts for seeding and maintaining council and recycling URL data.
 | `scripts/seed_recycling_urls.py` | Discover each council's recycling/waste page URL |
 | `scripts/seed_materials.py` | Scrape recycling material data for each council |
 | `scripts/seed_suburbs.py` | Seed suburb → council mapping |
-| `scripts/dump_councils.py` | Dump current DB state to a timestamped YAML snapshot |
+| `scripts/councils_yaml.py` | Dump DB to YAML snapshot or load a snapshot into the DB |
 
 ---
 
@@ -32,13 +32,14 @@ Skip scraping entirely and reseed the database from a previously generated YAML 
 uv run python scripts/seed_councils.py --from-file councils_20260319_143022.yaml --output db
 ```
 
-### Snapshot current database state
+### YAML snapshot utilities
 
-Read all councils from the database (including recycling URLs) and write to a new timestamped YAML:
+Dump the current DB state to a timestamped YAML, or restore from a snapshot:
 
 ```bash
-uv run python scripts/dump_councils.py
-uv run python scripts/dump_councils.py --output councils_custom.yaml
+uv run python scripts/councils_yaml.py dump
+uv run python scripts/councils_yaml.py dump --output councils_custom.yaml
+uv run python scripts/councils_yaml.py load councils_20260319_032617.yaml
 ```
 
 ### Limit to specific states
@@ -121,6 +122,8 @@ These are applied on every run of both scripts.
 ## Typical full workflow
 
 ```bash
+cd scraper/
+
 # 1. Scrape councils
 uv run python scripts/seed_councils.py --output db
 
@@ -128,7 +131,7 @@ uv run python scripts/seed_councils.py --output db
 uv run python scripts/seed_recycling_urls.py --output db --workers 2
 
 # 3. Snapshot DB state to YAML
-uv run python scripts/dump_councils.py
+uv run python scripts/councils_yaml.py dump
 
 # 4. Scrape recycling materials for each council
 uv run python scripts/seed_materials.py --councils all --output db

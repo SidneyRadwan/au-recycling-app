@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Dump all councils from the database to a timestamped YAML snapshot.
+Dump councils from the database to a YAML snapshot, or load a YAML snapshot into the database.
 
 Usage:
-    uv run python scripts/dump_councils.py
-    uv run python scripts/dump_councils.py --output councils_custom.yaml
+    uv run python scripts/councils_yaml.py dump
+    uv run python scripts/councils_yaml.py dump --output councils_custom.yaml
+    uv run python scripts/councils_yaml.py load councils_20260319_032617.yaml
 """
 
 import argparse
@@ -71,15 +72,56 @@ def dump(path: Path | None = None) -> Path:
     return path
 
 
+def load(path: Path) -> None:
+    import yaml
+
+    councils = yaml.safe_load(path.read_text()) or []
+    conn = _db_conn()
+    with conn:
+        with conn.cursor() as cur:
+            for c in councils:
+                cur.execute(
+                    """
+                    INSERT INTO councils (name, slug, state, website, recycling_info_url)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (slug) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        state = EXCLUDED.state,
+                        website = EXCLUDED.website,
+                        recycling_info_url = EXCLUDED.recycling_info_url
+                    """,
+                    (
+                        c["name"],
+                        c["slug"],
+                        c["state"],
+                        c.get("website"),
+                        c.get("recycling_url"),
+                    ),
+                )
+    conn.close()
+    print(f"Loaded {len(councils)} councils from {path}", file=sys.stderr)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Dump councils DB to YAML snapshot")
-    parser.add_argument(
+    parser = argparse.ArgumentParser(description="Dump or load councils YAML snapshot")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    dump_p = sub.add_parser("dump", help="Dump DB to YAML")
+    dump_p.add_argument(
         "--output",
         metavar="PATH",
         help="Output path (default: scraper/councils_YYYYMMDD_HHMMSS.yaml)",
     )
+
+    load_p = sub.add_parser("load", help="Load YAML into DB")
+    load_p.add_argument("file", metavar="PATH", help="YAML file to load")
+
     args = parser.parse_args()
-    dump(Path(args.output) if args.output else None)
+
+    if args.command == "dump":
+        dump(Path(args.output) if args.output else None)
+    elif args.command == "load":
+        load(Path(args.file))
 
 
 if __name__ == "__main__":
