@@ -1,0 +1,110 @@
+# Manual corrections for councils that can't be auto-discovered.
+# website:            corrects homepage URL used as seed_councils.py source
+# recycling_info_url: manually supplies the recycling page URL
+#
+# Add entries here for councils where auto-discovery fails:
+#   - Wrong/dead homepage URL in the source data
+#   - Broken SSL cert blocking requests
+#   - No recycling keywords in nav links (too small/remote)
+#   - JS-heavy site that defeats Playwright scoring
+
+wakefield-regional-council:
+  website: "https://www.wrc.sa.gov.au"
+
+# NSW — OLG directory has stale URLs
+armidale-regional-council:
+  website: "https://www.armidale.nsw.gov.au"
+  recycling_info_url: "https://www.armidale.nsw.gov.au/Services/Waste-and-recycling-services"
+
+gwydir-shire-council:
+  website: "https://www.gwydir.nsw.gov.au"
+  recycling_info_url: "https://www.gwydir.nsw.gov.au/Environment/Waste-and-Recycling"
+
+liverpool-plains-shire-council:
+  website: "https://www.liverpoolplains.nsw.gov.au"
+  recycling_info_url: "https://www.liverpoolplains.nsw.gov.au/Services/Waste-and-recycling"
+
+# QLD — Playwright timeout
+hinchinbrook-shire-council:
+  recycling_info_url: "https://www.hinchinbrook.qld.gov.au/water-waste-and-roads/waste-and-recycling/"
+
+# QLD — "refuse" keyword not in discovery list
+richmond-shire-council:
+  recycling_info_url: "https://www.richmond.qld.gov.au/services/refuse-management"
+
+# QLD — scored a library page; correct waste page confirmed via search
+mackay-regional-council:
+  recycling_info_url: "https://www.mackay.qld.gov.au/residents/services/waste/waste_and_recycling"
+
+# VIC — vic.gov.au Excel has stale URLs
+gannawarra-shire-council:
+  website: "https://www.gannawarra.vic.gov.au"
+  recycling_info_url: "https://www.gannawarra.vic.gov.au/My-Property/Waste/Kerbside-Waste-and-Recycling-Collection"
+
+greater-dandenong-city-council:
+  website: "https://www.greaterdandenong.vic.gov.au"
+  recycling_info_url: "https://www.greaterdandenong.vic.gov.au/waste"
+
+# TAS — JS-only nav
+tasman:
+  recycling_info_url: "https://www.tasman.tas.gov.au/services/waste-management/"
+
+# WA — wrong website in DB (dlgsc.wa.gov.au); correct council sites confirmed via search
+narrogin:
+  website: "https://www.narrogin.wa.gov.au"
+  recycling_info_url: "https://www.narrogin.wa.gov.au/live/services/waste.aspx"
+
+perenjori:
+  website: "https://www.perenjori.wa.gov.au"
+  recycling_info_url: "https://www.perenjori.wa.gov.au/services/waste-management.aspx"
+
+# WA — Playwright page crash / timeout / scored 0
+boyup-brook:
+  recycling_info_url: "https://www.boyupbrook.wa.gov.au/services/council-services/waste-and-recycling.aspx"
+
+canning:
+  recycling_info_url: "https://www.canning.wa.gov.au/residents/waste-and-recycling/"
+
+subiaco:
+  recycling_info_url: "https://www.subiaco.wa.gov.au/residents/in-your-home/bins-recycling-waste"
+
+wanneroo:
+  recycling_info_url: "https://www.wanneroo.wa.gov.au/waste"
+
+# SA — Wikipedia has stale URL + lstrip bug; SSL mismatch on old domain
+city-of-west-torrens:
+  website: "https://www.westtorrens.sa.gov.au"
+  recycling_info_url: "https://www.westtorrens.sa.gov.au/Waste-and-recycling"
+
+# SA — Wikipedia only has Wayback Machine URLs (lstrip bug + stale Wikipedia data)
+# These sites block auto-discovery (Cloudflare / 403) so recycling URLs are manual
+adelaide-plains-council:
+  website: "https://www.apc.sa.gov.au"
+  recycling_info_url: "https://www.apc.sa.gov.au/council-services/waste"
+
+city-of-port-lincoln:
+  website: "https://www.portlincoln.sa.gov.au"
+  recycling_info_url: "https://www.portlincoln.sa.gov.au/service-and-facilities/waste"
+
+port-pirie-regional-council:
+  website: "https://www.pirie.sa.gov.au"
+  recycling_info_url: "https://www.pirie.sa.gov.au/what-do-councils-do/waste-and-recycling"
+
+# SA — scored wrong pages (non-waste content)
+berri-barmera-council:
+  recycling_info_url: "https://www.berribarmera.sa.gov.au/council-services/waste"
+
+district-council-of-clare-and-gilbert-valleys:
+  recycling_info_url: "https://www.claregilbertvalleys.sa.gov.au/council-services/waste-management"
+
+flinders-range-council:
+  recycling_info_url: "https://www.frc.sa.gov.au/services/waste-management"
+
+kangaroo-island-council:
+  recycling_info_url: "https://www.kangarooisland.sa.gov.au/services/waste-management"
+
+southern-mallee-district-council:
+  recycling_info_url: "https://www.southernmallee.sa.gov.au/council-services/wastemanagement"
+
+wudinna-district-council:
+  recycling_info_url: "https://www.wudinna.sa.gov.au/our-services/council-services/waste-management"

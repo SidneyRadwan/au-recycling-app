@@ -1,0 +1,51 @@
+name: Weekly Scrape
+
+on:
+  schedule:
+    # Every Monday at 2am AEST (Sunday 4pm UTC)
+    - cron: '0 16 * * 0'
+  workflow_dispatch:
+    inputs:
+      councils:
+        description: 'Council slugs (comma-separated) or "all"'
+        default: 'all'
+        required: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: recycling
+          POSTGRES_USER: recycling
+          POSTGRES_PASSWORD: recycling
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: scraper/uv.lock
+
+      - name: Run scraper
+        working-directory: scraper
+        run: |
+          uv run python main.py \
+            --councils "${{ github.event.inputs.councils || 'all' }}" \
+            --output db
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://recycling:recycling@localhost:5432/recycling' }}
+          LITELLM_BASE_URL: ${{ secrets.LITELLM_BASE_URL || 'http://localhost:4000' }}
+          LITELLM_MASTER_KEY: ${{ secrets.LITELLM_MASTER_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LITELLM_DEFAULT_MODEL: ${{ vars.LITELLM_DEFAULT_MODEL || 'claude-opus-4-6' }}

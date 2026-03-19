@@ -13,7 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_connection():
-    return psycopg2.connect(settings.get_database_url())
+    url = settings.get_database_url()
+    # Strip jdbc: prefix if present — psycopg2 requires a plain postgres:// DSN
+    if url.startswith("jdbc:"):
+        url = url[5:]
+    return psycopg2.connect(
+        url,
+        user=settings.database_username,
+        password=settings.database_password,
+    )
 
 
 def upsert_council(conn, council: CouncilData) -> int:

@@ -22,7 +22,9 @@ import argparse
 import re
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 import psycopg2
 import requests
@@ -34,6 +36,15 @@ from config import settings
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _load_overrides() -> dict:
+    path = Path(__file__).parent / "council_overrides.yaml"
+    if not path.exists():
+        return {}
+    import yaml
+
+    return yaml.safe_load(path.read_text()) or {}
 
 
 def slugify(name: str) -> str:
@@ -61,12 +72,35 @@ _WIKI_HEADERS = {
 }
 
 
+_WIKI_SKIP_DOMAINS = {"web.archive.org", "lga.sa.gov.au", "id.com.au", "wikipedia.org"}
+
+
+def _canonicalize_url(url: str | None) -> str | None:
+    """Upgrade http:// to https:// and strip redundant default ports."""
+    if not url:
+        return None
+    url = url.strip()
+    if url.startswith("http://"):
+        url = "https://" + url[7:]
+    # Strip redundant :443 (e.g. https://host:443/ → https://host/)
+    parsed = urlparse(url)
+    if parsed.scheme == "https" and parsed.port == 443:
+        url = parsed._replace(netloc=parsed.hostname).geturl()
+    return url.rstrip("/")
+
+
 def _wiki_official_website(wiki_path: str) -> str | None:
     """
-    Fetch a Wikipedia article and return the URL labelled 'Official website'
-    in the External links section, or None if not found.
+    Fetch a Wikipedia article and return the council's website URL from the
+    External links section.
+
+    Australian council Wikipedia articles use varied link text:
+    "Official website", "Council website", "Adelaide Hills Council website", etc.
+    Strategy: take the first external link containing "website" in the text,
+    skipping archive/directory links.
     """
     import time
+    from urllib.parse import urlparse
 
     try:
         resp = requests.get(_WIKI_BASE + wiki_path, timeout=15, headers=_WIKI_HEADERS)
@@ -77,10 +111,30 @@ def _wiki_official_website(wiki_path: str) -> str | None:
             if "external" in h.get_text(strip=True).lower():
                 ul = h.find_next("ul")
                 if ul:
+                    first_valid: str | None = None
                     for li in ul.select("li"):
                         a = li.find("a", href=True)
-                        if a and "official website" in a.get_text(strip=True).lower():
-                            return a["href"].rstrip("/")
+                        if not a:
+                            continue
+                        href = a["href"]
+                        domain = urlparse(href).netloc.removeprefix("www.")
+                        if any(skip in domain for skip in _WIKI_SKIP_DOMAINS):
+                            continue
+                        if not href.startswith("http"):
+                            continue
+                        # Skip non-HTML resources
+                        path_lower = urlparse(href).path.lower()
+                        if path_lower.endswith(".pdf") or "contentfile" in path_lower:
+                            continue
+                        text = a.get_text(strip=True).lower()
+                        # Prefer explicit "website"/"official" label
+                        if "website" in text or "official" in text:
+                            return href.rstrip("/")
+                        # Fall back to first valid external link
+                        if first_valid is None:
+                            first_valid = href.rstrip("/")
+                    if first_valid:
+                        return first_valid
                 break
     except Exception:
         pass
@@ -89,8 +143,10 @@ def _wiki_official_website(wiki_path: str) -> str | None:
     return None
 
 
-def to_sql_row(name: str, state: str, website: str | None) -> str:
-    slug = slugify(name)
+def to_sql_row(
+    name: str, state: str, website: str | None, slug: str | None = None
+) -> str:
+    slug = slug or slugify(name)
     return f"  ({_esc(name)}, {_esc(slug)}, {_esc(state)}, {_esc(website)})"
 
 
@@ -131,9 +187,12 @@ def scrape_nsw() -> list[dict]:
         for b in item.select("b"):
             if "web" in b.get_text(strip=True).lower():
                 a = b.find_next("a", href=True)
-                if a and a["href"].startswith("http"):
-                    website = a["href"].rstrip("/")
-                    break
+                if a:
+                    href = a["href"].strip()
+                    if not href.startswith("http"):
+                        href = "https://" + href
+                    website = href.rstrip("/")
+                break
 
         councils.append({"name": name, "state": "NSW", "website": website})
 
@@ -282,7 +341,7 @@ def scrape_qld(_page=None) -> list[dict]:
 def scrape_wa(_page=None) -> list[dict]:
     """
     Step 1: GET /Home/GetGeoData — returns JSON with LGName and LGID.
-    Step 2: GET /Council/ViewCouncil/{LGID} — extract .wa.gov.au website link.
+    Step 2: GET /Council/ViewCouncil/{LGID} — extract council website link.
     """
     import time
 
@@ -307,7 +366,8 @@ def scrape_wa(_page=None) -> list[dict]:
             continue
         seen_wa.add(name)
 
-        # Fetch profile page to get the council's own website
+        # Fetch profile page to get the council's own website via the
+        # explicit "Website" field (icon-earth bullet row).
         website = None
         try:
             profile = requests.get(
@@ -315,15 +375,12 @@ def scrape_wa(_page=None) -> list[dict]:
             )
             if profile.ok:
                 psoup = BeautifulSoup(profile.text, "lxml")
-                for a in psoup.select("a[href]"):
-                    href = a["href"].rstrip("/")
-                    if (
-                        href.startswith("http")
-                        and ".wa.gov.au" in href
-                        and "mycouncil.wa.gov.au" not in href
-                    ):
-                        website = href
-                        break
+                icon = psoup.select_one(".bullet-icon span[title='Website']")
+                if icon:
+                    row = icon.find_parent("div", class_="col-xs-12")
+                    a = row and row.select_one(".bullet-text a[href]")
+                    if a:
+                        website = a["href"].rstrip("/")
         except Exception:
             pass
 
@@ -566,27 +623,39 @@ _NAME_OVERRIDES: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 
-def generate_sql(all_councils: list[dict]) -> str:
-    # Apply canonical name overrides then deduplicate by slug
+def _prepare_councils(all_councils: list[dict]) -> list[dict]:
+    """Apply name overrides, dedup by slug, and canonicalize URLs."""
     seen_slugs: set[str] = set()
     unique = []
     for c in all_councils:
         name = _NAME_OVERRIDES.get(c["name"], c["name"])
-        slug = slugify(name)
+        slug = c.get("slug") or slugify(name)
         if slug and slug not in seen_slugs:
             seen_slugs.add(slug)
-            unique.append({**c, "name": name})
+            unique.append({**c, "name": name, "slug": slug})
 
-    rows = [to_sql_row(c["name"], c["state"], c["website"]) for c in unique]
+    print(f"  Canonicalizing {len(unique)} website URLs...", file=sys.stderr)
+    for c in unique:
+        c["website"] = _canonicalize_url(c["website"])
+
+    return unique
+
+
+def generate_sql(all_councils: list[dict]) -> tuple[str, list[dict]]:
+    """Return (sql, prepared_councils). prepared_councils is deduped and canonicalized."""
+    unique = _prepare_councils(all_councils)
+    rows = [to_sql_row(c["name"], c["state"], c["website"], c["slug"]) for c in unique]
     rows_sql = ",\n".join(rows)
 
-    return f"""\
+    sql = f"""\
 -- Auto-generated by scraper/seed_councils.py
 -- {len(unique)} councils across all Australian states and territories
 INSERT INTO councils (name, slug, state, website) VALUES
 {rows_sql}
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE SET
+  website = COALESCE(EXCLUDED.website, councils.website);
 """
+    return sql, unique
 
 
 # ---------------------------------------------------------------------------
@@ -603,27 +672,115 @@ def write_migration(sql: str) -> None:
     print(f"Written: {path}", file=sys.stderr)
 
 
-def write_to_db(sql: str, reset: bool = False) -> None:
+def _db_conn():
     import os
     from dotenv import load_dotenv
 
     load_dotenv(Path(__file__).parent.parent / ".env")
     db_url = os.environ.get("DATABASE_URL", "")
 
-    # Convert jdbc URL to psycopg2 DSN
-    # jdbc:postgresql://host:port/dbname -> host=... port=... dbname=...
     m = re.match(r"jdbc:postgresql://([^:/]+)(?::(\d+))?/(\w+)", db_url)
     if m:
         host, port, dbname = m.group(1), m.group(2) or "5432", m.group(3)
     else:
         host, port, dbname = "localhost", "5432", "recycling"
 
-    user = os.environ.get("DATABASE_USERNAME", "recycling")
-    password = os.environ.get("DATABASE_PASSWORD", "recycling_dev")
-
-    conn = psycopg2.connect(
-        host=host, port=port, dbname=dbname, user=user, password=password
+    return psycopg2.connect(
+        host=host,
+        port=port,
+        dbname=dbname,
+        user=os.environ.get("DATABASE_USERNAME", "recycling"),
+        password=os.environ.get("DATABASE_PASSWORD", "recycling_dev"),
     )
+
+
+_SCRAPER_DIR = Path(__file__).parent
+
+
+def _timestamped_yaml_path() -> Path:
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return _SCRAPER_DIR / f"councils_{ts}.yaml"
+
+
+def _latest_yaml_path() -> Path | None:
+    files = sorted(_SCRAPER_DIR.glob("councils_*.yaml"))
+    return files[-1] if files else None
+
+
+def dump_db_to_yaml(path: Path | None = None) -> Path:
+    """Read all councils from the DB and write to a timestamped councils YAML."""
+    import yaml
+
+    if path is None:
+        path = _timestamped_yaml_path()
+
+    conn = _db_conn()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name, slug, state, website, recycling_info_url"
+                " FROM councils ORDER BY state, name"
+            )
+            rows = cur.fetchall()
+    conn.close()
+
+    councils = [
+        {
+            "name": name,
+            "slug": slug,
+            "state": state,
+            "website": website,
+            "recycling_url": recycling_url,
+        }
+        for name, slug, state, website, recycling_url in rows
+    ]
+    path.write_text(yaml.dump(councils, allow_unicode=True, sort_keys=False))
+    print(f"Wrote {len(councils)} councils to {path}", file=sys.stderr)
+    return path
+
+
+def save_councils_yaml(councils: list[dict], path: Path | None = None) -> Path:
+    """Write a prepared councils list to a timestamped YAML with empty recycling_url."""
+    import yaml
+
+    if path is None:
+        path = _timestamped_yaml_path()
+
+    rows = [
+        {
+            "name": c["name"],
+            "slug": c["slug"],
+            "state": c["state"],
+            "website": c.get("website"),
+            "recycling_url": None,
+        }
+        for c in councils
+    ]
+    path.write_text(yaml.dump(rows, allow_unicode=True, sort_keys=False))
+    print(f"Wrote {len(rows)} councils to {path}", file=sys.stderr)
+    return path
+
+
+def load_from_yaml(path: Path) -> list[dict]:
+    """Load councils from a councils YAML file, skipping scraping entirely."""
+    import yaml
+
+    data = yaml.safe_load(path.read_text()) or []
+    result = [
+        {
+            "name": c["name"],
+            "slug": c["slug"],
+            "state": c["state"],
+            "website": c.get("website"),
+        }
+        for c in data
+    ]
+    print(f"Loaded {len(result)} councils from {path}", file=sys.stderr)
+    return result
+
+
+def write_to_db(sql: str, reset: bool = False) -> None:
+    conn = _db_conn()
     with conn:
         with conn.cursor() as cur:
             if reset:
@@ -661,40 +818,68 @@ def main() -> None:
         action="store_true",
         help="Truncate councils (cascades to suburbs, council_materials) before seeding. Only valid with --output db.",
     )
+    parser.add_argument(
+        "--dump-db",
+        action="store_true",
+        help="Read current councils from the DB and write to a timestamped councils YAML, then exit.",
+    )
+    parser.add_argument(
+        "--from-file",
+        metavar="PATH",
+        help="Skip scraping; seed from the given councils YAML file instead.",
+    )
     args = parser.parse_args()
 
     if args.reset and args.output != "db":
         parser.error("--reset is only valid with --output db")
+    if args.dump_db and args.from_file:
+        parser.error("--dump-db and --from-file are mutually exclusive")
 
-    all_councils: list[dict] = []
+    if args.dump_db:
+        dump_db_to_yaml()
+        return
 
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
-        page = browser.new_page()
+    if args.from_file:
+        all_councils = load_from_yaml(Path(args.from_file))
+    else:
+        all_councils = []
 
-        state_scrapers = {
-            "NSW": scrape_nsw,
-            "VIC": lambda: scrape_vic(page),
-            "QLD": scrape_qld,
-            "WA": scrape_wa,
-            "SA": scrape_sa,
-            "TAS": scrape_tas,
-            "NT": lambda: scrape_nt(page),
-            "ACT": scrape_act,
-        }
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            page = browser.new_page()
 
-        for state in args.states:
-            try:
-                councils = state_scrapers[state]()
-                all_councils.extend(councils)
-            except Exception as e:
-                print(f"  ERROR scraping {state}: {e}", file=sys.stderr)
+            state_scrapers = {
+                "NSW": scrape_nsw,
+                "VIC": lambda: scrape_vic(page),
+                "QLD": scrape_qld,
+                "WA": scrape_wa,
+                "SA": scrape_sa,
+                "TAS": scrape_tas,
+                "NT": lambda: scrape_nt(page),
+                "ACT": scrape_act,
+            }
 
-        browser.close()
+            for state in args.states:
+                try:
+                    councils = state_scrapers[state]()
+                    all_councils.extend(councils)
+                except Exception as e:
+                    print(f"  ERROR scraping {state}: {e}", file=sys.stderr)
 
-    sql = generate_sql(all_councils)
+            browser.close()
 
-    print(f"\nTotal unique councils: {sql.count(chr(10) + '  (')}", file=sys.stderr)
+    overrides = _load_overrides()
+    for c in all_councils:
+        slug = c.get("slug") or slugify(_NAME_OVERRIDES.get(c["name"], c["name"]))
+        if slug in overrides and "website" in overrides[slug]:
+            c["website"] = overrides[slug]["website"]
+
+    sql, prepared = generate_sql(all_councils)
+
+    print(f"\nTotal unique councils: {len(prepared)}", file=sys.stderr)
+
+    if not args.from_file:
+        save_councils_yaml(prepared)
 
     if args.output == "stdout":
         print(sql)

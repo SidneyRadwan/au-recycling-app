@@ -192,7 +192,7 @@ Page content:
             def render(url: str) -> tuple[str, list[str]]:
                 self._respect_rate_limit()
                 page = context.new_page()
-                page.goto(url, wait_until="networkidle", timeout=30_000)
+                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
                 html = page.content()
                 page.close()
                 self._last_request_at = time.monotonic()
