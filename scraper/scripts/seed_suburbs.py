@@ -9,7 +9,6 @@ Data source URL is configured via SEED_POSTCODES_URL env var (see .env.example).
 
 Usage:
     uv run python seed_suburbs.py                    # print SQL to stdout
-    uv run python seed_suburbs.py --output migration  # write V4__seed_suburbs.sql
     uv run python seed_suburbs.py --output db         # insert directly into the database
 """
 
@@ -264,15 +263,6 @@ ON CONFLICT DO NOTHING;
 # ---------------------------------------------------------------------------
 
 
-def write_migration(sql: str) -> None:
-    path = (
-        Path(__file__).parent.parent.parent
-        / "backend/src/main/resources/db/migration/V4__seed_suburbs.sql"
-    )
-    path.write_text(sql)
-    print(f"Written: {path}", file=sys.stderr)
-
-
 def write_to_db(
     rows: list[tuple[str, str | None, str, int]], reset: bool = False
 ) -> None:
@@ -301,9 +291,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Seed suburbs from postcode data")
     parser.add_argument(
         "--output",
-        choices=["stdout", "migration", "db"],
+        choices=["stdout", "db"],
         default="stdout",
-        help="stdout: print SQL | migration: write V4__seed_suburbs.sql | db: insert directly",
+        help="stdout: print SQL | db: insert directly",
     )
     parser.add_argument(
         "--reset",
@@ -327,8 +317,6 @@ def main() -> None:
 
     if args.output == "stdout":
         print(generate_sql(rows))
-    elif args.output == "migration":
-        write_migration(generate_sql(rows))
     elif args.output == "db":
         write_to_db(rows, reset=args.reset)
 

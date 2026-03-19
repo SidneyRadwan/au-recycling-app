@@ -4,7 +4,6 @@ One-off script to seed all ~537 Australian councils from state government direct
 
 Usage:
     uv run python seed_councils.py                    # print SQL to stdout
-    uv run python seed_councils.py --output migration  # write V3__seed_councils.sql
     uv run python seed_councils.py --output db         # insert directly into the database
 
 Sources:
@@ -663,15 +662,6 @@ ON CONFLICT (slug) DO UPDATE SET
 # ---------------------------------------------------------------------------
 
 
-def write_migration(sql: str) -> None:
-    path = (
-        Path(__file__).parent.parent.parent
-        / "backend/src/main/resources/db/migration/V3__seed_councils.sql"
-    )
-    path.write_text(sql)
-    print(f"Written: {path}", file=sys.stderr)
-
-
 def _db_conn():
     import os
     from dotenv import load_dotenv
@@ -736,9 +726,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Seed all Australian councils")
     parser.add_argument(
         "--output",
-        choices=["stdout", "migration", "db"],
+        choices=["stdout", "db"],
         default="stdout",
-        help="stdout: print SQL | migration: write V3__seed_councils.sql | db: insert directly",
+        help="stdout: print SQL | db: insert directly",
     )
     parser.add_argument(
         "--states",
@@ -802,8 +792,6 @@ def main() -> None:
 
     if args.output == "stdout":
         print(sql)
-    elif args.output == "migration":
-        write_migration(sql)
     elif args.output == "db":
         write_to_db(sql, reset=args.reset)
 
