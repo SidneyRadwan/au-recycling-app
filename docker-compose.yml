@@ -32,6 +32,20 @@ services:
       timeout: 5s
       retries: 5
 
+  litellm_db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm_dev
+    volumes:
+      - litellm_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # LiteLLM proxy — OpenAI-compatible API gateway in front of all AI providers.
   # Backend calls http://litellm:4000 internally; swap models via LITELLM_DEFAULT_MODEL.
   litellm:
@@ -45,9 +59,9 @@ services:
       LITELLM_DEFAULT_MODEL: ${LITELLM_DEFAULT_MODEL:-claude-sonnet-4-6}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-dev-master-key}
-      DATABASE_URL: postgresql://recycling:recycling_dev@db:5432/recycling
+      DATABASE_URL: postgresql://litellm:litellm_dev@litellm_db:5432/litellm
     depends_on:
-      db:
+      litellm_db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
@@ -59,3 +73,4 @@ services:
 
 volumes:
   postgres_data:
+  litellm_postgres_data:
