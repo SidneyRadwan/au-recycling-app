@@ -1,16 +1,16 @@
+output "workload_identity_provider" {
+  description = "Workload Identity Federation provider — set as GCP_WORKLOAD_IDENTITY_PROVIDER in GitHub Actions secrets."
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "cd_service_account" {
+  description = "Service account email for the CD pipeline — set as GCP_SERVICE_ACCOUNT in GitHub Actions secrets."
+  value       = google_service_account.cloud_run.email
+}
+
 output "artifact_registry" {
   description = "Artifact Registry base path for Docker images."
   value       = local.registry
-}
-
-output "backend_service_url" {
-  description = "The URL of the backend Cloud Run service."
-  value       = google_cloud_run_v2_service.backend.uri
-}
-
-output "frontend_service_url" {
-  description = "The URL of the frontend Cloud Run service."
-  value       = google_cloud_run_v2_service.frontend.uri
 }
 
 output "cloud_sql_instance_connection_name" {

@@ -9,16 +9,10 @@ variable "region" {
   default     = "australia-southeast1"
 }
 
-variable "backend_image" {
-  description = "Docker image tag to deploy for the backend Cloud Run service (e.g. 'v1.2.3' or 'latest')."
-  type        = string
-  default     = "latest"
-}
 
-variable "frontend_image" {
-  description = "Docker image tag to deploy for the frontend Cloud Run service (e.g. 'v1.2.3' or 'latest')."
+variable "github_repo" {
+  description = "GitHub repository in 'owner/repo' format, used to scope Workload Identity Federation (e.g. 'SidneyRadwan/au-recycling-app')."
   type        = string
-  default     = "latest"
 }
 
 variable "dns_zone_name" {

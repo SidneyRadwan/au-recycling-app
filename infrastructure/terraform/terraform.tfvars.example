@@ -1,5 +1,6 @@
-project_id = "your-gcp-project-id"
-region     = "australia-southeast1"
+project_id  = "your-gcp-project-id"
+region      = "australia-southeast1"
+github_repo = "owner/repo"
 
 # DNS — update to match your registered domain
 # dns_zone_name   = "australiarecycling.com.au"

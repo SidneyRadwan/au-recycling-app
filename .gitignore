@@ -50,3 +50,4 @@ scraper/output/.llm_cache/
 
 # Claude
 .claude/settings.local.json
+terraform.tfvars

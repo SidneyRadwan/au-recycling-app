@@ -78,6 +78,77 @@ resource "google_artifact_registry_repository_iam_member" "cloud_run_reader" {
 }
 
 # ---------------------------------------------------------------------------
+# Workload Identity Federation — keyless GitHub Actions auth
+# ---------------------------------------------------------------------------
+data "google_project" "project" {}
+
+resource "google_iam_workload_identity_pool" "github" {
+  workload_identity_pool_id = "gh-actions"
+  display_name              = "GitHub Actions"
+}
+
+resource "google_iam_workload_identity_pool_provider" "github" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github"
+  display_name                       = "GitHub"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+  }
+
+  attribute_condition = "assertion.repository == '${var.github_repo}'"
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+# Grant GitHub Actions the ability to impersonate the Cloud Run service account
+resource "google_service_account_iam_member" "github_wif" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
+}
+
+# Roles needed by the CD pipeline
+resource "google_project_iam_member" "cloud_run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "artifact_registry_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "service_account_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# ---------------------------------------------------------------------------
+# VPC Peering — required for Cloud SQL private IP
+# ---------------------------------------------------------------------------
+resource "google_compute_global_address" "private_ip" {
+  name          = "recycling-private-ip"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = "projects/${var.project_id}/global/networks/default"
+}
+
+resource "google_service_networking_connection" "private_vpc" {
+  network                 = "projects/${var.project_id}/global/networks/default"
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip.name]
+}
+
+# ---------------------------------------------------------------------------
 # VPC Connector — private Cloud SQL access from Cloud Run
 # ---------------------------------------------------------------------------
 resource "google_vpc_access_connector" "connector" {
@@ -94,6 +165,8 @@ resource "google_sql_database_instance" "main" {
   name             = "recycling-db"
   database_version = "POSTGRES_16"
   region           = var.region
+
+  depends_on = [google_service_networking_connection.private_vpc]
 
   settings {
     tier              = "db-g1-small"
@@ -130,160 +203,9 @@ resource "google_sql_user" "recycling" {
 }
 
 # ---------------------------------------------------------------------------
-# Cloud Run — Backend (Spring Boot)
+# Cloud Run services are deployed and managed by the CD pipeline.
+# See .github/workflows/deploy.yml — gcloud run deploy creates/updates them.
 # ---------------------------------------------------------------------------
-resource "google_cloud_run_v2_service" "backend" {
-  name     = "recycling-backend"
-  location = var.region
-
-  template {
-    service_account = google_service_account.cloud_run.email
-
-    vpc_access {
-      connector = google_vpc_access_connector.connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
-    }
-
-    containers {
-      image = "${local.registry}/backend:${var.backend_image}"
-
-      ports {
-        container_port = 8080
-      }
-
-      env {
-        name  = "DATABASE_URL"
-        value = "jdbc:postgresql:///${google_sql_database.recycling.name}?cloudSqlInstance=${google_sql_database_instance.main.connection_name}&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=${google_sql_user.recycling.name}"
-      }
-      env {
-        name  = "DATABASE_USERNAME"
-        value = google_sql_user.recycling.name
-      }
-      env {
-        name = "DATABASE_PASSWORD"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.db_password.secret_id
-            version = "latest"
-          }
-        }
-      }
-      env {
-        name = "ANTHROPIC_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.anthropic_api_key.secret_id
-            version = "latest"
-          }
-        }
-      }
-      env {
-        name  = "SPRING_PROFILES_ACTIVE"
-        value = "prod"
-      }
-      env {
-        name  = "CORS_ALLOWED_ORIGINS"
-        value = "https://${var.frontend_domain}"
-      }
-
-      resources {
-        limits = {
-          cpu    = "1"
-          memory = "1Gi"
-        }
-      }
-
-      startup_probe {
-        http_get {
-          path = "/actuator/health"
-          port = 8080
-        }
-        initial_delay_seconds = 10
-        period_seconds        = 10
-        failure_threshold     = 12
-        timeout_seconds       = 5
-      }
-
-      liveness_probe {
-        http_get {
-          path = "/actuator/health"
-          port = 8080
-        }
-        period_seconds    = 30
-        failure_threshold = 3
-        timeout_seconds   = 5
-      }
-    }
-  }
-
-  traffic {
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-    percent = 100
-  }
-}
-
-resource "google_cloud_run_v2_service_iam_member" "backend_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.backend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-# ---------------------------------------------------------------------------
-# Cloud Run — Frontend (Next.js)
-# ---------------------------------------------------------------------------
-resource "google_cloud_run_v2_service" "frontend" {
-  name     = "recycling-frontend"
-  location = var.region
-
-  template {
-    service_account = google_service_account.cloud_run.email
-
-    containers {
-      image = "${local.registry}/frontend:${var.frontend_image}"
-
-      ports {
-        container_port = 3000
-      }
-
-      env {
-        name  = "NEXT_PUBLIC_API_URL"
-        value = "https://api.${var.dns_zone_name}"
-      }
-
-      resources {
-        limits = {
-          cpu    = "1"
-          memory = "512Mi"
-        }
-      }
-
-      liveness_probe {
-        http_get {
-          path = "/"
-          port = 3000
-        }
-        period_seconds    = 30
-        failure_threshold = 3
-        timeout_seconds   = 5
-      }
-    }
-  }
-
-  traffic {
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-    percent = 100
-  }
-}
-
-resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.frontend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
 
 # ---------------------------------------------------------------------------
 # DNS — Managed Zone and Records
@@ -294,14 +216,8 @@ resource "google_dns_managed_zone" "recycling" {
   description = "Managed DNS zone for Australia Recycling"
 }
 
-resource "google_dns_record_set" "frontend" {
-  name         = "${var.frontend_domain}."
-  type         = "CNAME"
-  ttl          = 300
-  managed_zone = google_dns_managed_zone.recycling.name
-  # Update after: gcloud beta run domain-mappings create --service recycling-frontend
-  rrdatas = ["ghs.googlehosted.com."]
-}
+# Note: apex domain A records are added after Cloud Run domain mapping.
+# The mapping provides IP addresses: gcloud beta run domain-mappings create ...
 
 resource "google_dns_record_set" "backend_api" {
   name         = "api.${var.dns_zone_name}."
