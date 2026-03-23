@@ -7,16 +7,16 @@ FROM gradle:8.10-jdk21 AS builder
 
 WORKDIR /app
 
-# Copy gradle wrapper and dependency specs first to leverage layer caching
-COPY gradlew gradlew.bat settings.gradle build.gradle ./
+# Copy dependency specs first to leverage layer caching
+COPY settings.gradle build.gradle ./
 COPY gradle/ gradle/
 
 # Download dependencies (cached unless build files change)
-RUN ./gradlew dependencies --no-daemon --quiet
+RUN gradle dependencies --no-daemon --quiet
 
 # Copy source and build the fat jar, skipping tests (tests run in CI separately)
 COPY src/ src/
-RUN ./gradlew build -x test -x spotlessCheck --no-daemon
+RUN gradle build -x test -x spotlessCheck --no-daemon
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine AS runtime
