@@ -21,6 +21,7 @@ import argparse
 import re
 import sys
 import tempfile
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -684,24 +685,6 @@ def _db_conn():
     )
 
 
-def load_from_yaml(path: Path) -> list[dict]:
-    """Load councils from a councils YAML file, skipping scraping entirely."""
-    import yaml
-
-    data = yaml.safe_load(path.read_text()) or []
-    result = [
-        {
-            "name": c["name"],
-            "slug": c["slug"],
-            "state": c["state"],
-            "website": c.get("website"),
-        }
-        for c in data
-    ]
-    print(f"Loaded {len(result)} councils from {path}", file=sys.stderr)
-    return result
-
-
 def write_to_db(sql: str, reset: bool = False) -> None:
     conn = _db_conn()
     with conn:
@@ -741,44 +724,45 @@ def main() -> None:
         action="store_true",
         help="Truncate councils (cascades to suburbs, council_materials) before seeding. Only valid with --output db.",
     )
-    parser.add_argument(
-        "--from-file",
-        metavar="PATH",
-        help="Skip scraping; seed from the given councils YAML file instead.",
-    )
     args = parser.parse_args()
 
     if args.reset and args.output != "db":
         parser.error("--reset is only valid with --output db")
 
-    if args.from_file:
-        all_councils = load_from_yaml(Path(args.from_file))
-    else:
-        all_councils = []
+    if args.reset:
+        print(
+            "WARNING: --reset will CASCADE DELETE, wiping suburbs and materials.\n"
+            "You must re-run seed_suburbs.py, seed_recycling_urls and seed_suburbs.py afterwards.\n"
+            "Continuing in 5 seconds...",
+            file=sys.stderr,
+        )
+        time.sleep(5)
 
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True)
-            page = browser.new_page()
+    all_councils = []
 
-            state_scrapers = {
-                "NSW": scrape_nsw,
-                "VIC": lambda: scrape_vic(page),
-                "QLD": scrape_qld,
-                "WA": scrape_wa,
-                "SA": scrape_sa,
-                "TAS": scrape_tas,
-                "NT": lambda: scrape_nt(page),
-                "ACT": scrape_act,
-            }
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page()
 
-            for state in args.states:
-                try:
-                    councils = state_scrapers[state]()
-                    all_councils.extend(councils)
-                except Exception as e:
-                    print(f"  ERROR scraping {state}: {e}", file=sys.stderr)
+        state_scrapers = {
+            "NSW": scrape_nsw,
+            "VIC": lambda: scrape_vic(page),
+            "QLD": scrape_qld,
+            "WA": scrape_wa,
+            "SA": scrape_sa,
+            "TAS": scrape_tas,
+            "NT": lambda: scrape_nt(page),
+            "ACT": scrape_act,
+        }
 
-            browser.close()
+        for state in args.states:
+            try:
+                councils = state_scrapers[state]()
+                all_councils.extend(councils)
+            except Exception as e:
+                print(f"  ERROR scraping {state}: {e}", file=sys.stderr)
+
+        browser.close()
 
     overrides = _load_overrides()
     for c in all_councils:

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Scraper behaviour
     scraper_output_dir: Path = Field(default=Path(__file__).parent / "output")
     scraper_rate_limit: float = Field(default=1.0)
+    llm_rate_limit: int = Field(
+        default=50, description="Max Claude API calls per minute (0 = unlimited)"
+    )
 
     # Seed data source URLs — override if a government directory page moves
     seed_nsw_url: str = Field(

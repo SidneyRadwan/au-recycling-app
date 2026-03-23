@@ -24,17 +24,9 @@ Scrapes state government directories, applies overrides from `council_overrides.
 uv run python scripts/seed_councils.py --output db
 ```
 
-### Seed from a YAML snapshot (when sources are down)
-
-Skip scraping entirely and reseed the database from a previously generated YAML file:
-
-```bash
-uv run python scripts/seed_councils.py --from-file councils_20260319_143022.yaml --output db
-```
-
 ### YAML snapshot utilities
 
-Dump the current DB state to a timestamped YAML, or restore from a snapshot:
+Dump the current DB state to a timestamped YAML, or restore from a snapshot (including recycling URLs):
 
 ```bash
 uv run python scripts/councils_yaml.py dump
@@ -87,12 +79,29 @@ uv run python scripts/seed_recycling_urls.py --output db --workers 2 --reset
 
 ## Seeding suburbs
 
-Seeds the suburbs table from Matthew Proctor's Australian Postcodes dataset.
+Seeds the `suburbs` table from Matthew Proctor's Australian Postcodes dataset (URL configured via `SEED_POSTCODES_URL` in `.env`). Requires councils to already be seeded — suburb rows are matched to councils by LGA name.
+
+### Seed into database
 
 ```bash
 uv run python scripts/seed_suburbs.py --output db
+```
+
+### Preview SQL without writing
+
+```bash
+uv run python scripts/seed_suburbs.py --output stdout
+```
+
+### Reset before seeding
+
+Truncates the `suburbs` table before inserting (does not cascade):
+
+```bash
 uv run python scripts/seed_suburbs.py --output db --reset
 ```
+
+> **Note:** If you ran `seed_councils.py --reset`, suburbs are also wiped (cascade). Always re-run `seed_suburbs.py --output db` after a council reset.
 
 ---
 
@@ -127,12 +136,15 @@ cd scraper/
 # 1. Scrape councils
 uv run python scripts/seed_councils.py --output db
 
-# 2. Discover recycling URLs → populates recycling_url in the database
+# 2. Seed suburbs (suburb/postcode → council mapping)
+uv run python scripts/seed_suburbs.py --output db
+
+# 3. Discover recycling URLs → populates recycling_url in the database
 uv run python scripts/seed_recycling_urls.py --output db --workers 2
 
-# 3. Snapshot DB state to YAML
+# 4. Snapshot DB state to YAML
 uv run python scripts/councils_yaml.py dump
 
-# 4. Scrape recycling materials for each council
-uv run python scripts/seed_materials.py --councils all --output db
+# 5. Scrape recycling materials for each council
+uv run python scripts/seed_materials.py --councils all --output db --workers 2
 ```

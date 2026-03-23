@@ -1,7 +1,9 @@
+import collections
 import hashlib
 import json
 import logging
 import re
+import threading
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -18,6 +20,37 @@ from models import BinType, CouncilData, CouncilMaterial
 from utils import retry
 
 logger = logging.getLogger(__name__)
+
+_thread_local = threading.local()
+
+
+class _RateLimiter:
+    """Thread-safe sliding window rate limiter."""
+
+    def __init__(self, max_calls: int, period: float = 60.0) -> None:
+        self._max_calls = max_calls
+        self._period = period
+        self._timestamps: collections.deque = collections.deque()
+        self._lock = threading.Lock()
+
+    def acquire(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            while self._timestamps and now - self._timestamps[0] >= self._period:
+                self._timestamps.popleft()
+            if len(self._timestamps) >= self._max_calls:
+                sleep_for = self._period - (now - self._timestamps[0])
+                logger.debug("LLM rate limit reached, sleeping %.1fs", sleep_for)
+                time.sleep(sleep_for)
+                now = time.monotonic()
+                while self._timestamps and now - self._timestamps[0] >= self._period:
+                    self._timestamps.popleft()
+            self._timestamps.append(time.monotonic())
+
+
+_llm_rate_limiter: _RateLimiter | None = (
+    _RateLimiter(settings.llm_rate_limit) if settings.llm_rate_limit > 0 else None
+)
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -82,6 +115,12 @@ class BaseCouncilScraper(ABC):
 
     council_slug: str = ""
     rate_limit_seconds: float = 1.0
+
+    @classmethod
+    def set_thread_browser(cls, browser) -> None:
+        """Register a shared Playwright browser for the current thread.
+        Called by seed_materials.py worker initialiser; optional."""
+        _thread_local.browser = browser
 
     def __init__(self, rate_limit_seconds: Optional[float] = None) -> None:
         if rate_limit_seconds is not None:
@@ -180,24 +219,30 @@ Page content:
 
         logger.info("Crawling %s (max %d pages)", start_url, max_pages)
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent=DEFAULT_HEADERS["User-Agent"],
-                extra_http_headers={
-                    "Accept-Language": DEFAULT_HEADERS["Accept-Language"]
-                },
-            )
+        external_browser = getattr(_thread_local, "browser", None)
+        _own_browser = external_browser is None
 
-            def render(url: str) -> tuple[str, list[str]]:
-                self._respect_rate_limit()
-                page = context.new_page()
-                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                html = page.content()
-                page.close()
-                self._last_request_at = time.monotonic()
-                return self._html_to_text(html)
+        if _own_browser:
+            _pw = sync_playwright().start()
+            browser = _pw.chromium.launch(headless=True)
+        else:
+            browser = external_browser
 
+        context = browser.new_context(
+            user_agent=DEFAULT_HEADERS["User-Agent"],
+            extra_http_headers={"Accept-Language": DEFAULT_HEADERS["Accept-Language"]},
+        )
+
+        def render(url: str) -> tuple[str, list[str]]:
+            self._respect_rate_limit()
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            html = page.content()
+            page.close()
+            self._last_request_at = time.monotonic()
+            return self._html_to_text(html)
+
+        try:
             # Fetch the start page
             text, raw_hrefs = render(start_url)
             visited.add(start_url)
@@ -243,8 +288,11 @@ Page content:
                     pages_text.append(sub_text)
                 except Exception as e:
                     logger.warning("  Skipping %s: %s", url, e)
-
-            browser.close()
+        finally:
+            context.close()  # always close context to isolate state between councils
+            if _own_browser:
+                browser.close()
+                _pw.stop()
 
         logger.info("Crawled %d page(s), extracting materials", len(pages_text))
 
@@ -278,6 +326,8 @@ Page content:
             logger.info("LLM cache hit for %s", source_url)
             raw = cache_file.read_text()
         else:
+            if _llm_rate_limiter:
+                _llm_rate_limiter.acquire()
             client = anthropic.Anthropic(api_key=settings.get_anthropic_api_key())
             message = client.messages.create(
                 model=settings.extraction_model,
