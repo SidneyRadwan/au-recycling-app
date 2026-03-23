@@ -1,0 +1,81 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  REGION: australia-southeast1
+  REGISTRY: australia-southeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/au-recycling
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for Workload Identity Federation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version tag
+        id: version
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # -----------------------------------------------------------------------
+      # Backend
+      # -----------------------------------------------------------------------
+      - name: Build backend image
+        run: |
+          docker build \
+            --build-arg VERSION=${{ steps.version.outputs.tag }} \
+            -t ${{ env.REGISTRY }}/backend:${{ steps.version.outputs.tag }} \
+            -t ${{ env.REGISTRY }}/backend:latest \
+            ./backend
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.REGISTRY }}/backend:${{ steps.version.outputs.tag }}
+          docker push ${{ env.REGISTRY }}/backend:latest
+
+      - name: Deploy backend to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: recycling-backend
+          region: ${{ env.REGION }}
+          image: ${{ env.REGISTRY }}/backend:${{ steps.version.outputs.tag }}
+
+      # -----------------------------------------------------------------------
+      # Frontend
+      # -----------------------------------------------------------------------
+      - name: Build frontend image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.${{ vars.DNS_ZONE_NAME }} \
+            -t ${{ env.REGISTRY }}/frontend:${{ steps.version.outputs.tag }} \
+            -t ${{ env.REGISTRY }}/frontend:latest \
+            ./frontend
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.REGISTRY }}/frontend:${{ steps.version.outputs.tag }}
+          docker push ${{ env.REGISTRY }}/frontend:latest
+
+      - name: Deploy frontend to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: recycling-frontend
+          region: ${{ env.REGION }}
+          image: ${{ env.REGISTRY }}/frontend:${{ steps.version.outputs.tag }}

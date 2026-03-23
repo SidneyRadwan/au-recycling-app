@@ -1,15 +1,19 @@
 project_id = "your-gcp-project-id"
 region     = "australia-southeast1"
 
-# Cloud SQL JDBC URL — fill in after `terraform apply` creates the instance,
-# or use the Cloud SQL Auth Proxy address for local/CI connections.
-# database_url = "jdbc:postgresql:///<db-name>?cloudSqlInstance=<connection-name>&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-
-# Sensitive values — do not commit actual secrets. Use CI/CD secrets or
-# a secrets manager (e.g. Google Secret Manager, HashiCorp Vault).
-# database_password  = "change-me"
-# anthropic_api_key  = "sk-ant-..."
-
 # DNS — update to match your registered domain
 # dns_zone_name   = "australiarecycling.com.au"
 # frontend_domain = "australiarecycling.com.au"
+
+# Image tags — overridden by the CD pipeline on each release.
+# backend_image  = "v1.0.0"
+# frontend_image = "v1.0.0"
+
+# Sensitive values are managed via Secret Manager — do not add them here.
+# Before first `terraform apply`, populate secrets manually:
+#
+#   echo -n "your-db-password" | \
+#     gcloud secrets versions add recycling-db-password --data-file=-
+#
+#   echo -n "sk-ant-..." | \
+#     gcloud secrets versions add recycling-anthropic-api-key --data-file=-
