@@ -52,6 +52,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # uv — fast Python package manager
 COPY --from=uv /uv /uvx /usr/local/bin/
 
+# Google Cloud SDK (gcloud)
+RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    > /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-cloud-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Terraform
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
+    | gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com noble main" \
+    > /etc/apt/sources.list.d/hashicorp.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends terraform \
+    && rm -rf /var/lib/apt/lists/*
+
 # pre-commit (manages git hooks for all languages in this repo)
 RUN pip install --break-system-packages pre-commit
 
