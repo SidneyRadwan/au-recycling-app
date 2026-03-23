@@ -12,11 +12,16 @@ import argparse
 import json
 import logging
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from pathlib import Path
 
+from playwright.sync_api import sync_playwright
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import settings
+from councils.base import BaseCouncilScraper
 from councils.registry import get_all_slugs, get_scraper
 
 logging.basicConfig(
@@ -25,6 +30,26 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+_playwright_instances: list = []
+_playwright_lock = threading.Lock()
+
+
+def _init_worker() -> None:
+    pw = sync_playwright().start()
+    browser = pw.chromium.launch(headless=True)
+    BaseCouncilScraper.set_thread_browser(browser)
+    with _playwright_lock:
+        _playwright_instances.append(pw)
+
+
+def _stop_all_workers() -> None:
+    for pw in _playwright_instances:
+        try:
+            pw.stop()
+        except Exception:
+            pass
+    _playwright_instances.clear()
 
 
 def parse_args() -> argparse.Namespace:
@@ -57,6 +82,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Crawl pages and save raw text to output/<slug>.crawl.txt without calling the LLM",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Parallel scraper workers. Default: 4",
+    )
     return parser.parse_args()
 
 
@@ -71,8 +102,9 @@ def already_scraped(slug: str, output: str, output_dir: Path) -> bool:
             conn = get_connection()
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT 1 FROM councils WHERE slug = %s "
-                    "AND updated_at >= CURRENT_DATE",
+                    "SELECT 1 FROM council_materials cm "
+                    "JOIN councils c ON c.id = cm.council_id "
+                    "WHERE c.slug = %s LIMIT 1",
                     (slug,),
                 )
                 return cur.fetchone() is not None
@@ -149,10 +181,30 @@ def main() -> None:
 
     logger.info("Running scraper for %d council(s): %s", len(slugs), ", ".join(slugs))
 
-    if args.crawl_only:
-        results = {slug: run_crawl_only(slug, output_dir) for slug in slugs}
-    else:
-        results = {slug: run_scraper(slug, args.output, output_dir) for slug in slugs}
+    fn = run_crawl_only if args.crawl_only else run_scraper
+    extra_args = () if args.crawl_only else (args.output,)
+    results: dict[str, bool] = {}
+    completed = 0
+    total = len(slugs)
+
+    try:
+        with ThreadPoolExecutor(
+            max_workers=args.workers, initializer=_init_worker
+        ) as executor:
+            future_to_slug = {
+                executor.submit(fn, slug, output_dir, *extra_args): slug
+                for slug in slugs
+            }
+            for future in as_completed(future_to_slug):
+                slug = future_to_slug[future]
+                ok = future.result()
+                results[slug] = ok
+                completed += 1
+                logger.info(
+                    "[%d/%d] %s %s", completed, total, "OK" if ok else "FAIL", slug
+                )
+    finally:
+        _stop_all_workers()
 
     passed = sum(results.values())
     failed = len(results) - passed
