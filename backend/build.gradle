@@ -42,6 +42,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.google.cloud.sql:postgres-socket-factory:1.19.1'
     runtimeOnly 'com.h2database:h2'
 
     compileOnly 'org.projectlombok:lombok'
