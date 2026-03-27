@@ -68,6 +68,7 @@ export default function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -75,14 +76,17 @@ export default function SearchBar() {
       setOpen(false)
       return
     }
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
     setLoading(true)
     try {
-      const data = await search(q.trim())
+      const data = await search(q.trim(), abortRef.current.signal)
       const flat = flattenResults(data)
       setResults(flat)
       setOpen(flat.length > 0)
       setActiveIndex(-1)
-    } catch {
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
       setResults([])
       setOpen(false)
     } finally {

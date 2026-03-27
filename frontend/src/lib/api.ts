@@ -50,9 +50,10 @@ export async function getMaterial(slug: string): Promise<Material> {
   })
 }
 
-export async function search(q: string): Promise<SearchResult> {
+export async function search(q: string, signal?: AbortSignal): Promise<SearchResult> {
   const params = new URLSearchParams({ q })
   return fetcher<SearchResult>(`/search?${params.toString()}`, {
     cache: 'no-store',
+    signal,
   })
 }
