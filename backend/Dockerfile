@@ -3,7 +3,7 @@
 # ---- Build Stage ----
 # Note: ensure a .dockerignore exists in backend/ to exclude:
 #   .gradle/, build/, .git/, *.md, *.DS_Store
-FROM gradle:8.10-jdk21 AS builder
+FROM gradle:9.4.1-jdk25 AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY src/ src/
 RUN gradle build -x test -x spotlessCheck --no-daemon
 
 # ---- Runtime Stage ----
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl

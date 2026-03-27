@@ -4,17 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "councils")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Council {
 
   @Id
@@ -46,12 +38,12 @@ public class Council {
   private LocalDateTime updatedAt;
 
   @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
   private List<Suburb> suburbs = new ArrayList<>();
 
   @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
   private List<CouncilMaterial> councilMaterials = new ArrayList<>();
+
+  public Council() {}
 
   @PrePersist
   protected void onCreate() {
@@ -62,5 +54,93 @@ public class Council {
   @PreUpdate
   protected void onUpdate() {
     updatedAt = LocalDateTime.now();
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getSlug() {
+    return slug;
+  }
+
+  public void setSlug(String slug) {
+    this.slug = slug;
+  }
+
+  public String getState() {
+    return state;
+  }
+
+  public void setState(String state) {
+    this.state = state;
+  }
+
+  public String getWebsite() {
+    return website;
+  }
+
+  public void setWebsite(String website) {
+    this.website = website;
+  }
+
+  public String getRecyclingInfoUrl() {
+    return recyclingInfoUrl;
+  }
+
+  public void setRecyclingInfoUrl(String recyclingInfoUrl) {
+    this.recyclingInfoUrl = recyclingInfoUrl;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
+
+  public List<Suburb> getSuburbs() {
+    return suburbs;
+  }
+
+  public void setSuburbs(List<Suburb> suburbs) {
+    this.suburbs = suburbs;
+  }
+
+  public List<CouncilMaterial> getCouncilMaterials() {
+    return councilMaterials;
+  }
+
+  public void setCouncilMaterials(List<CouncilMaterial> councilMaterials) {
+    this.councilMaterials = councilMaterials;
   }
 }

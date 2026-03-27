@@ -3,7 +3,6 @@ package com.australiarecycling.controller;
 import com.australiarecycling.dto.CouncilDetailDto;
 import com.australiarecycling.dto.CouncilDto;
 import com.australiarecycling.service.CouncilService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -12,10 +11,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/councils")
-@RequiredArgsConstructor
 public class CouncilController {
 
   private final CouncilService councilService;
+
+  public CouncilController(CouncilService councilService) {
+    this.councilService = councilService;
+  }
 
   @GetMapping
   public Page<CouncilDto> listCouncils(

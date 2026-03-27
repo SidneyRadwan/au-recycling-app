@@ -2,19 +2,11 @@ package com.australiarecycling.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
     name = "council_materials",
     uniqueConstraints = @UniqueConstraint(columnNames = {"council_id", "material_id"}))
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CouncilMaterial {
 
   @Id
@@ -42,6 +34,8 @@ public class CouncilMaterial {
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
+  public CouncilMaterial() {}
+
   @PrePersist
   protected void onCreate() {
     createdAt = LocalDateTime.now();
@@ -54,5 +48,61 @@ public class CouncilMaterial {
     SOFT_PLASTICS,
     SPECIAL_DROP_OFF,
     NOT_ACCEPTED
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public Council getCouncil() {
+    return council;
+  }
+
+  public void setCouncil(Council council) {
+    this.council = council;
+  }
+
+  public Material getMaterial() {
+    return material;
+  }
+
+  public void setMaterial(Material material) {
+    this.material = material;
+  }
+
+  public BinType getBinType() {
+    return binType;
+  }
+
+  public void setBinType(BinType binType) {
+    this.binType = binType;
+  }
+
+  public String getInstructions() {
+    return instructions;
+  }
+
+  public void setInstructions(String instructions) {
+    this.instructions = instructions;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
   }
 }

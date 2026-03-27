@@ -3,16 +3,18 @@ package com.australiarecycling.controller;
 import com.australiarecycling.dto.MaterialDto;
 import com.australiarecycling.service.MaterialService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/materials")
-@RequiredArgsConstructor
 public class MaterialController {
 
   private final MaterialService materialService;
+
+  public MaterialController(MaterialService materialService) {
+    this.materialService = materialService;
+  }
 
   @GetMapping
   public List<MaterialDto> listMaterials(@RequestParam(required = false) String category) {

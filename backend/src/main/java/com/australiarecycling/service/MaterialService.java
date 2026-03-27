@@ -5,16 +5,18 @@ import com.australiarecycling.model.Material;
 import com.australiarecycling.repository.MaterialRepository;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MaterialService {
 
   private final MaterialRepository materialRepository;
+
+  public MaterialService(MaterialRepository materialRepository) {
+    this.materialRepository = materialRepository;
+  }
 
   public List<MaterialDto> findAll() {
     return materialRepository.findAll().stream().map(this::toDto).toList();

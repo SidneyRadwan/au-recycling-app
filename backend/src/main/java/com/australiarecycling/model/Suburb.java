@@ -2,17 +2,9 @@ package com.australiarecycling.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "suburbs")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Suburb {
 
   @Id
@@ -35,8 +27,58 @@ public class Suburb {
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
+  public Suburb() {}
+
   @PrePersist
   protected void onCreate() {
     createdAt = LocalDateTime.now();
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getPostcode() {
+    return postcode;
+  }
+
+  public void setPostcode(String postcode) {
+    this.postcode = postcode;
+  }
+
+  public String getState() {
+    return state;
+  }
+
+  public void setState(String state) {
+    this.state = state;
+  }
+
+  public Council getCouncil() {
+    return council;
+  }
+
+  public void setCouncil(Council council) {
+    this.council = council;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
   }
 }

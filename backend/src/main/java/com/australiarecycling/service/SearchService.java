@@ -10,19 +10,26 @@ import com.australiarecycling.repository.CouncilRepository;
 import com.australiarecycling.repository.MaterialRepository;
 import com.australiarecycling.repository.SuburbRepository;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SearchService {
 
   private final CouncilRepository councilRepository;
   private final SuburbRepository suburbRepository;
   private final MaterialRepository materialRepository;
+
+  public SearchService(
+      CouncilRepository councilRepository,
+      SuburbRepository suburbRepository,
+      MaterialRepository materialRepository) {
+    this.councilRepository = councilRepository;
+    this.suburbRepository = suburbRepository;
+    this.materialRepository = materialRepository;
+  }
 
   public SearchResultDto search(String query) {
     if (query == null || query.trim().isEmpty()) {
