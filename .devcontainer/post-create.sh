@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Frontend dependencies
-cd /workspace/frontend && npm install --prefer-offline
+cd /workspace/frontend && bun install
 
 # Scraper dependencies (uses cached packages from Dockerfile layer)
 cd /workspace/scraper && uv sync && uv run playwright install chromium

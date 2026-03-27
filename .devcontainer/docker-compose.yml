@@ -1,0 +1,125 @@
+name: au-recycling-app
+
+services:
+  # Dev container service — used by devcontainer.json
+  # Frontend and backend run via VS Code tasks, not as Docker services.
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/recycling
+      DATABASE_USERNAME: recycling
+      DATABASE_PASSWORD: recycling_dev
+      # Redirect tool cache/install locations to named volumes
+      GRADLE_USER_HOME: /home/vscode/.cache/gradle
+      UV_CACHE_DIR: /home/vscode/.cache/uv
+      UV_PYTHON_INSTALL_DIR: /home/vscode/.cache/uv-python
+      BUN_INSTALL_CACHE_DIR: /home/vscode/.cache/bun
+    volumes:
+      # Workspace mount
+      - ..:/workspace:cached
+      # Host bind mounts
+      - ${HOME}/.ssh:/home/vscode/.ssh:ro
+      - ${HOME}/.gitconfig:/home/vscode/.gitconfig:ro
+      # Claude Code
+      - claude-code-config:/home/vscode/.claude
+      - claudecode-bash-history:/commandhistory
+      # In-project dirs that must live at a fixed path — volume overlays the bind mount
+      - frontend-node-modules:/workspace/frontend/node_modules
+      - frontend-nextjs:/workspace/frontend/.next
+      # Tool caches — pointed at by env vars below, all under ~/.cache
+      - backend-gradle:/home/vscode/.cache/gradle
+      - uv-cache:/home/vscode/.cache/uv
+      - uv-python:/home/vscode/.cache/uv-python
+      - venv:/workspace/scraper/.venv
+      - bun:/home/vscode/.cache/bun
+      # Docker-outside-of-docker — share host Docker daemon socket
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: recycling
+      POSTGRES_USER: recycling
+      POSTGRES_PASSWORD: recycling_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recycling"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  litellm_db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm_dev
+    volumes:
+      - litellm-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # LiteLLM proxy — OpenAI-compatible API gateway in front of all AI providers.
+  # Backend calls http://litellm:4000 internally; swap models via LITELLM_DEFAULT_MODEL.
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../litellm-config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_DEFAULT_MODEL: ${LITELLM_DEFAULT_MODEL:-claude-sonnet-4-6}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-dev-master-key}
+      DATABASE_URL: postgresql://litellm:litellm_dev@litellm_db:5432/litellm
+    depends_on:
+      litellm_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  # Database
+  postgres-data:
+    name: au-recycling-postgres-data
+  litellm-postgres-data:
+    name: au-recycling-litellm-postgres-data
+  # Caches
+  uv-cache:
+    name: au-recycling-uv-cache
+  # Libraries
+  frontend-node-modules:
+    name: au-recycling-frontend-node-modules
+  frontend-nextjs:
+    name: au-recycling-frontend-nextjs
+  backend-gradle:
+    name: au-recycling-backend-gradle
+  uv-python:
+    name: au-recycling-uv-python
+  venv:
+    name: au-recycling-venv
+  bun:
+    name: au-recycling-bun
+  # Claude
+  claude-code-config:
+    name: au-recycling-claude-code-config
+  claudecode-bash-history:
+    name: au-recycling-claudecode-bash-history

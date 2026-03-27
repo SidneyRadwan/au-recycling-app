@@ -1,9 +1,6 @@
 {
   "name": "Australia Recycling Dev",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-  },
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
   "remoteUser": "vscode",
@@ -23,7 +20,7 @@
       ],
       "settings": {
         "java.configuration.runtimes": [
-          { "name": "JavaSE-21", "path": "/usr/lib/jvm/temurin-21", "default": true }
+          { "name": "JavaSE-25", "path": "/usr/lib/jvm/temurin-25", "default": true }
         ]
       }
     }
@@ -40,8 +37,5 @@
       "label": "Database"
     }
   },
-  "mounts": [
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind",
-    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume"
-  ]
+  "mounts": []
 }
