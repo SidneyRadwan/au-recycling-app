@@ -209,9 +209,153 @@ resource "google_sql_user" "recycling" {
 }
 
 # ---------------------------------------------------------------------------
-# Cloud Run services are deployed and managed by the CD pipeline.
-# See .github/workflows/deploy.yml — gcloud run deploy creates/updates them.
+# Cloud Run — Backend
+# Image is managed by the CD pipeline; Terraform owns everything else.
 # ---------------------------------------------------------------------------
+resource "google_cloud_run_v2_service" "backend" {
+  name     = "recycling-backend"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.cloud_run.email
+
+    vpc_access {
+      connector = google_vpc_access_connector.connector.id
+      egress    = "PRIVATE_RANGES_ONLY"
+    }
+
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.main.connection_name]
+      }
+    }
+
+    containers {
+      # Image tag is updated by the CD pipeline on each release
+      image = "${local.registry}/backend:latest"
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
+
+      env {
+        name  = "SPRING_PROFILES_ACTIVE"
+        value = "prod"
+      }
+      env {
+        name  = "DATABASE_URL"
+        value = "jdbc:postgresql:///recycling?cloudSqlInstance=${google_sql_database_instance.main.connection_name}&socketFactory=com.google.cloud.sql.postgres.SocketFactory&user=recycling"
+      }
+      env {
+        name  = "DATABASE_USERNAME"
+        value = "recycling"
+      }
+      env {
+        name  = "CORS_ALLOWED_ORIGINS"
+        value = "https://${var.frontend_domain}"
+      }
+      env {
+        name = "DATABASE_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "ANTHROPIC_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.anthropic_api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+      client,
+      client_version,
+    ]
+  }
+
+  depends_on = [
+    google_service_networking_connection.private_vpc,
+    google_secret_manager_secret_iam_member.cloud_run_db_password,
+    google_secret_manager_secret_iam_member.cloud_run_anthropic,
+  ]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "backend_public" {
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.backend.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ---------------------------------------------------------------------------
+# Cloud Run — Frontend
+# ---------------------------------------------------------------------------
+resource "google_cloud_run_v2_service" "frontend" {
+  name     = "recycling-frontend"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.cloud_run.email
+
+    containers {
+      image = "${local.registry}/frontend:latest"
+
+      ports {
+        container_port = 3000
+      }
+
+      env {
+        name  = "NEXT_PUBLIC_API_URL"
+        value = "https://api.${var.dns_zone_name}"
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "512Mi"
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+      client,
+      client_version,
+    ]
+  }
+}
+
+resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.frontend.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
 
 # ---------------------------------------------------------------------------
 # DNS — Managed Zone and Records

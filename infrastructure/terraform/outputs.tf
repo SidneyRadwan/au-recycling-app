@@ -22,3 +22,13 @@ output "dns_name_servers" {
   description = "The name servers for the Cloud DNS managed zone. Delegate these at your domain registrar."
   value       = google_dns_managed_zone.recycling.name_servers
 }
+
+output "backend_url" {
+  description = "Cloud Run backend service URL."
+  value       = google_cloud_run_v2_service.backend.uri
+}
+
+output "frontend_url" {
+  description = "Cloud Run frontend service URL."
+  value       = google_cloud_run_v2_service.frontend.uri
+}
