@@ -12,7 +12,7 @@
 Website (australiarecycling.com.au) helping Australians find recycling information by council area. Mono-repo with Java backend, React frontend, and Python scraper.
 
 ## Architecture
-- **Backend**: Java 21 + Spring Boot 3 + Gradle — `backend/`
+- **Backend**: Java 25 + Spring Boot 4 + Gradle — `backend/`
 - **Frontend**: Next.js 15 + React 19 + TypeScript + Tailwind + shadcn/ui — `frontend/`
 - **Scraper**: Python 3.12 + BeautifulSoup/Scrapy — `scraper/`
 - **Database**: PostgreSQL 16 + pgvector
@@ -29,10 +29,10 @@ cd backend && ./gradlew test            # Test
 cd backend && ./gradlew build           # Build
 
 # Frontend
-cd frontend && npm run dev              # Dev server
-cd frontend && npm run build            # Build
-cd frontend && npm run test             # Test
-cd frontend && npm run lint             # Lint
+cd frontend && bun run dev              # Dev server
+cd frontend && bun run build            # Build
+cd frontend && bun run test             # Test
+cd frontend && bun run lint             # Lint
 
 # Scraper
 cd scraper && python -m pytest          # Test

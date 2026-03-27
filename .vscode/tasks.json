@@ -16,7 +16,7 @@
     {
       "label": "Frontend: Build",
       "type": "shell",
-      "command": "npm run build",
+      "command": "bun run build",
       "options": { "cwd": "${workspaceFolder}/frontend" },
       "presentation": { "reveal": "always", "panel": "dedicated", "showReuseMessage": false },
       "group": "build"
@@ -24,7 +24,7 @@
     {
       "label": "Frontend: Lint",
       "type": "shell",
-      "command": "npm run lint",
+      "command": "bun run lint",
       "options": { "cwd": "${workspaceFolder}/frontend" },
       "presentation": { "reveal": "always", "panel": "dedicated", "showReuseMessage": false },
       "group": "test"
@@ -47,7 +47,7 @@
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": {
         "reveal": "always", "panel": "dedicated",
-        "group": "services", "showReuseMessage": false
+        "group": "services", "showReuseMessage": false, "clear": true
       },
       "runOptions": { "instanceLimit": 1 },
       "problemMatcher": []
@@ -78,6 +78,18 @@
       "type": "shell",
       "command": "docker compose down",
       "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
+      "label": "Claude",
+      "type": "shell",
+      "command": "claude",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": {
+        "reveal": "always", "panel": "dedicated",
+        "group": "build", "showReuseMessage": false, "clear": true
+      },
+      "runOptions": { "runOn": "folderOpen" },
+      "problemMatcher": []
     }
   ]
 }
